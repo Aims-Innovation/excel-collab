@@ -18,5 +18,6 @@ if (location.hostname === 'nusr.github.io') {
     tracePropagationTargets: ['nusr.github.io'],
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
+    release: window.__bundle_info?.commit_id,
   });
 }

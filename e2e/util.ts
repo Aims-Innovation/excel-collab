@@ -1,29 +1,50 @@
-import { Page } from '@playwright/test';
+import { Page, expect, test } from '@playwright/test';
 
-export const INDEX_PAGE = '/app?is_e2e_test=true';
+const clearTable = async (page: Page) => {
+  await page.evaluate(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+};
+
+test.beforeEach(async ({ page }) => {
+  await gotoHomePage(page);
+});
+
+test.afterEach(async ({ page }) => {
+  await clearTable(page);
+});
+
 export const MAIN_CANVAS = 'canvas-main';
 
 export function getByTestId(selector: string) {
   return `[data-testid="${selector}"]`;
 }
 
-export async function goto(page: Page, url = INDEX_PAGE) {
+export async function gotoHomePage(page: Page) {
   page.on('pageerror', (err) => {
     throw err;
   });
 
   page.on('console', (msg) => {
+    if (process.env.CI) {
+      return;
+    }
     const type = msg.type();
     const text = msg.text();
-    if (type === 'error' || type === 'warning') {
+    if (type === 'error') {
+      if (text.includes('Yjs was already imported')) {
+        return;
+      }
       throw new Error(text);
     }
   });
 
-  await page.goto(url);
-  if (url === INDEX_PAGE) {
-    await page.waitForSelector(getByTestId(MAIN_CANVAS));
-  }
+  await page.goto('/');
+
+  await clearTable(page);
+
+  await expect(page.getByTestId(MAIN_CANVAS)).toBeVisible();
 }
 
 export async function clickFirstCell(page: Page, isDbClick = false) {

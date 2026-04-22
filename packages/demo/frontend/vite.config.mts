@@ -1,16 +1,30 @@
 import { defineConfig, AliasOptions } from 'vite';
 import react from '@vitejs/plugin-react';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
-import { resolve } from 'path';
+import { join } from 'path';
+import { version } from './package.json';
+
+function htmlSlot(options: Record<string, string>) {
+  return {
+    name: 'html-slot',
+    transformIndexHtml(indexHtml: string) {
+      for (const [key, value] of Object.entries(options)) {
+        indexHtml = indexHtml.replace(key, value);
+      }
+
+      return indexHtml;
+    },
+  };
+}
 
 export default defineConfig((env) => {
   const isDev = env.mode === 'development';
 
   let alias: AliasOptions = {};
 
-  if (isDev) {
+  if (isDev || env.mode === 'e2e') {
     alias = {
-      'excel-collab': resolve(__dirname, '../../excel-collab/src'),
+      'excel-collab': join(__dirname, '..', '..', 'excel-collab', 'src'),
     };
   }
 
@@ -23,17 +37,23 @@ export default defineConfig((env) => {
         bundleName: 'demo',
         uploadToken: process.env.CODECOV_TOKEN,
       }),
+      htmlSlot({
+        '<!--BUNDLE_INFO-->': `<script>window.__bundle_info = ${JSON.stringify({ time: new Date().toISOString(), commit_id: process.env.COMMIT_ID ?? `v${version}` })}</script>`,
+      }),
     ],
-    define: {
-      'process.env.CI': JSON.stringify(process.env.CI ?? ''),
-    },
     build: {
+      modulePreload: true,
       sourcemap: true,
       outDir: './dist',
-      manifest: true
+      manifest: true,
     },
     resolve: {
       alias,
+    },
+    server: {
+      port: 3000,
+      open: false,
+      host: true,
     },
   };
 });

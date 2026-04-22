@@ -11,6 +11,7 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   VITE_DEFAULT_EXCEL_ID: ${{ vars.VITE_DEFAULT_EXCEL_ID }}
   ROOT_BASE_URL: ${{ vars.ROOT_BASE_URL }}
+  COMMIT_ID: ${{ github.sha }}
 
 jobs:
   CI:
@@ -18,10 +19,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: lts/*
 
       - name: Install font
         run: sudo npm run install-font
@@ -30,16 +34,15 @@ jobs:
         run: npm install -g yarn
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          yarn playwright install --with-deps
 
       - name: Type check
-        run: npm run type-check
+        run: yarn type-check
 
       - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
+        run: yarn lint
 
       - name: Unit test
         run: yarn coverage --verbose --debug
@@ -51,9 +54,45 @@ jobs:
           report_type: test_results
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: E2E tests
+        run: yarn e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 5
+
+      - name: Build
+        run: yarn build
+
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./packages/demo/frontend/dist
+
+      - name: Verify deployment
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Checking if site is accessible..."
+          commit_id="${{ github.sha }}"
+          max_retries=5
+          retry_interval=5
+          for i in $(seq 1 $max_retries); do
+            echo "Attempt $i/$max_retries: Waiting ${retry_interval}s for deployment to propagate..."
+            sleep $retry_interval
+            response=$(curl -sL https://nusr.github.io/excel)
+            if echo "$response" | grep -q "$commit_id"; then
+              echo "✓ COMMIT_ID ($commit_id) successfully injected into HTML"
+              echo "✓ Deployment successful!"
+              exit 0
+            fi
+            echo "Commit ID ($commit_id) not found yet, retrying..."
+          done
+          echo "✗ COMMIT_ID ($commit_id) verification failed after $max_retries attempts - commit ID not found in HTML!"
+          exit 1
