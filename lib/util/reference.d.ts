@@ -1,0 +1,11 @@
+import { IRange, ReferenceType } from '../types';
+import { SheetRange } from './range';
+export declare const isAlpha: (char: string) => boolean;
+export declare const isDigit: (char: string) => boolean;
+declare function convertSheetNameToSheetId(value: string): string;
+export declare function parseReference(text: string, convertSheetName?: typeof convertSheetNameToSheetId): SheetRange | undefined;
+export declare function mergeRange(start: IRange, end: IRange): SheetRange | undefined;
+export declare function convertToReference(range: IRange, referenceType?: ReferenceType, convertSheetIdToSheetName?: typeof convertSheetNameToSheetId): string;
+export declare const R1C1_REG: RegExp;
+export declare function parseR1C1(name: string, activeCell?: Pick<IRange, 'sheetId' | 'row' | 'col'>): SheetRange | undefined;
+export {};

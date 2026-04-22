@@ -1,0 +1,32 @@
+import { ModelJSON, IRange, IModel, IWorksheet, ResultType, StyleType, WorksheetData, EMergeCellType, ModelCellType, IHooks } from '../types';
+export declare class Worksheet implements IWorksheet {
+    private model;
+    private worker;
+    constructor(model: IModel, worker: IHooks['worker']);
+    private get worksheets();
+    fromJSON(json: ModelJSON): void;
+    addMergeCell(range: IRange, type?: EMergeCellType): void;
+    addRow(rowIndex: number, count: number, isAbove?: boolean): void;
+    deleteRow(rowIndex: number, count: number): void;
+    addCol(colIndex: number, count: number, isRight?: boolean): void;
+    deleteCol(colIndex: number, count: number): void;
+    getWorksheet(sheetId?: string): WorksheetData;
+    private getWorkData;
+    setWorksheet(data: WorksheetData): void;
+    getCell(range: IRange): ModelCellType | undefined;
+    deleteCell(range: IRange): void;
+    setCell(value: ResultType[][], style: Array<Array<Partial<StyleType>>>, range: IRange): Promise<void>;
+    setCellValue(value: ResultType, range: IRange): void;
+    updateCellStyle(style: Partial<ModelCellType>, range: IRange): void;
+    pasteRange(fromRange: IRange, isCut: boolean): IRange;
+    deleteAll(sheetId?: string): void;
+    private updateStyle;
+    private setValue;
+    private setCellFormula;
+    private validateSheetData;
+    private getCoordinateList;
+    private getCellModel;
+    private setCellModel;
+    private computeFormulasCallback;
+    computeFormulas(): Promise<boolean>;
+}

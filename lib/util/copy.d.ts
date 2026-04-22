@@ -1,0 +1,10 @@
+import { ClipboardData, CustomClipboardData } from '../types';
+export declare const PLAIN_FORMAT = "text/plain";
+export declare const HTML_FORMAT = "text/html";
+export declare const CUSTOM_FORMAT = "custom/model";
+export declare const IMAGE_FORMAT = "image/png";
+export declare function copyOrCut(textData: ClipboardData, type: 'copy' | 'cut'): Promise<void>;
+export declare function paste(): Promise<ClipboardData>;
+export declare function generateHTML(style: string, content: string, customData?: string): string;
+export declare function formatCustomData(customData: string): string;
+export declare function extractCustomData(html: string): CustomClipboardData | null;

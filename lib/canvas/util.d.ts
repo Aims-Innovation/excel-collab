@@ -1,0 +1,12 @@
+import { CanvasOverlayPosition, Point, IWindowSize, ModelCellType, BorderItem, ThemeType } from '../types';
+export declare function measureText(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, char: string): IWindowSize;
+export declare function fillRect(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, x: number, y: number, width: number, height: number): void;
+export declare function strokeRect(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, x: number, y: number, width: number, height: number): void;
+export declare function clearRect(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, x: number, y: number, width: number, height: number): void;
+export declare function fillText(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, text: string, x: number, y: number): void;
+export declare function drawLines(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pointList: Point[]): void;
+export declare function drawTriangle(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, point1: Point, point2: Point, point3: Point): void;
+export declare function getDoubleLine(pointList: Point[], position: 'top' | 'bottom' | 'left' | 'right', isShort: boolean): Point[];
+export declare function drawAntLine(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, x: number, y: number, width: number, height: number): void;
+export declare function renderBorderItem(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, cellInfo: CanvasOverlayPosition, borderItem: BorderItem | undefined, position: 'top' | 'bottom' | 'left' | 'right', theme?: ThemeType): void;
+export declare function renderCell(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, position: CanvasOverlayPosition, cellInfo: ModelCellType, isMergeCell?: boolean, theme?: ThemeType): IWindowSize;

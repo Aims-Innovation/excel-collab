@@ -7,7 +7,6 @@ dist
 coverage
 dist
 .DS_Store
-lib
 output
 port.txt
 test-results/

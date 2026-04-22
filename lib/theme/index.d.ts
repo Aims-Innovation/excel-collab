@@ -1,0 +1,25 @@
+import { ThemeType } from '../types';
+import { lightColor, darkColor } from './color';
+import { convertColorToDark } from './convert';
+export declare const sizeConfig: {
+    lowZIndex: number;
+    middleZIndex: number;
+    highZIndex: number;
+    highestZIndex: number;
+    smallFont: string;
+    font: string;
+    largeFont: string;
+    padding: string;
+    lineHeight: number;
+    mediumPadding: string;
+    largePadding: string;
+    borderRadius: string;
+    borderLargeRadius: string;
+    tinyPadding: string;
+    scrollBarContent: string;
+    formulaBarHeight: string;
+};
+export declare function setTheme(value: ThemeType): void;
+export declare function getTheme(): ThemeType;
+export declare function getThemeColor(key: keyof typeof lightColor, type?: ThemeType): string;
+export { darkColor, lightColor, convertColorToDark };
