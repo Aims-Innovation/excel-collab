@@ -7,6 +7,7 @@ let languageKey = 'excel-language';
 function i18nConfig() {
   const defaultLanguage = 'en-US';
   let _currentLanguage: LanguageType = defaultLanguage;
+  const listeners = new Set<() => void>();
 
   function getLanguage(lang?: LanguageType): LanguageType {
     const selectedLang = lang || navigator?.language || defaultLanguage;
@@ -23,6 +24,10 @@ function i18nConfig() {
     return defaultLanguage;
   }
 
+  function notify() {
+    for (const l of listeners) l();
+  }
+
   return {
     changeLanguage: (lang: LanguageType) => {
       if (lang === _currentLanguage) {
@@ -31,6 +36,7 @@ function i18nConfig() {
       const temp = getLanguage(lang);
       _currentLanguage = temp;
       localStorage.setItem(languageKey, temp);
+      notify();
     },
     init: () => {
       _currentLanguage = getLanguage(localStorage.getItem(languageKey) as any);
@@ -48,6 +54,12 @@ function i18nConfig() {
         }
         throw new Error(`i18n.t not found key: "${key}"`);
       });
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
     },
     get current() {
       return _currentLanguage;

@@ -4,7 +4,7 @@ import {
   StateContext,
   StateContextValue,
 } from './containers';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useSyncExternalStore } from 'react';
 import { initController } from './controller';
 import Worker from './worker?worker&inline';
 import { Doc } from 'yjs';
@@ -18,16 +18,21 @@ export type ExcelProps = EditorProps & {
   docConfig?: DocConfig;
 } & Pick<StateContextValue, 'provider' | 'awareness'>;
 
+const getLanguageSnapshot = () => i18n.current;
+const getLanguageServerSnapshot = () => 'en-US';
+
 export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
   const { doc, provider, awareness, docConfig } = props;
 
   const [value, setValue] = useState<StateContextValue | undefined>(undefined);
+  const language = useSyncExternalStore(
+    i18n.subscribe,
+    getLanguageSnapshot,
+    getLanguageServerSnapshot,
+  );
 
   useEffect(() => {
     i18n.init();
-    if (RTL_LANGUAGE_LIST.includes(i18n.current as any)) {
-      document.documentElement.setAttribute('data-layout-direction', 'rtl');
-    }
 
     const controller = initController({
       worker: new Worker(),
@@ -37,9 +42,17 @@ export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
     setValue({ controller, provider, awareness });
   }, []);
 
+  useEffect(() => {
+    const isRTL = RTL_LANGUAGE_LIST.includes(language as any);
+    document.documentElement.setAttribute(
+      'data-layout-direction',
+      isRTL ? 'rtl' : 'ltr',
+    );
+  }, [language]);
+
   return (
     <StateContext.Provider value={value}>
-      {value && <ExcelEditor {...props} />}
+      {value && <ExcelEditor key={language} {...props} />}
     </StateContext.Provider>
   );
 });

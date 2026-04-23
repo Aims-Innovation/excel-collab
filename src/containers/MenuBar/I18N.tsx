@@ -14,9 +14,6 @@ const dataList: OptionItem[] = LANGUAGE_LIST.map((v) => ({
 export const I18N: React.FunctionComponent = memo(() => {
   const handleChange = useCallback((c: string | number) => {
     i18n.changeLanguage(String(c) as LanguageType);
-    if (process.env.NODE_ENV !== 'test') {
-      location.reload();
-    }
   }, []);
   return (
     <div className={styles.i18n} data-testid="menubar-i18n">
