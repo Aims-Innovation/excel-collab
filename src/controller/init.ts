@@ -4,6 +4,7 @@ import { Controller } from './Controller';
 import method from '../canvas/worker';
 import { Doc } from 'yjs';
 import { wrap } from 'comlink';
+import { guardWorkerPostMessage } from './workerGuard';
 
 function getMockHooks() {
   return {
@@ -20,7 +21,7 @@ export function initController(
 ): IController {
   const worker =
     options.worker instanceof Worker
-      ? wrap(options.worker)
+      ? wrap(guardWorkerPostMessage(options.worker))
       : (options.worker as any);
 
   const hooks = {

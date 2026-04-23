@@ -74,7 +74,7 @@ Once all are in, rebuild `lib/`, tag `release/document-editor-v0.1.13.3`
 
 | # | Change | Fork source area (approximate) | Priority |
 |---|---|---|---|
-| 1 | **Guard Worker.postMessage against DataCloneError.** Wrap the canvas worker's postMessage in the fork source so a function-bearing payload doesn't kill the render. Originally the "option A" runtime guard in web-consumer; cleaner at source. | `src/canvas/` (worker bridge) | High — catches a class of bugs going forward |
+| 1 | ~~**Guard Worker.postMessage against DataCloneError.** Wrap the canvas worker's postMessage in the fork source so a function-bearing payload doesn't kill the render. Originally the "option A" runtime guard in web-consumer; cleaner at source.~~ **Landed** on `claude/restart-dev-server-ufgAZ`: new `src/controller/workerGuard.ts` monkey-patches `worker.postMessage` at `initController`. Fast path = direct passthrough; `DataCloneError` → sanitize (drop functions/symbols/circulars, preserve Map/Set/Blob/typed arrays) + retry once with the original transfer list. One-shot `console.warn` on first occurrence. Unit test at `src/controller/__tests__/workerGuard.test.ts`. | `src/controller/` (worker boundary) | High — catches a class of bugs going forward |
 | 2 | **Expose i18n singleton on `window.__yallyExcelI18n`.** One-line add in `src/i18n/index.ts` wrapping the existing `Ce = Uz()` export: `if (typeof window !== 'undefined') { (window as any).__yallyExcelI18n = Ce; }`. Unblocks locale sync from the host app. | `src/i18n/index.ts` | Medium |
 | 3 | **Drop `location.reload` on language change.** In the library's language picker component (`src/components/…/LanguageSwitcher.tsx` or similar). Remove the `location.reload()` call; the i18n store re-renders reactively. | Menubar language switcher | Medium |
 | 4 | **Remove "New File" / "Rename" File-menu entries.** Host-app owns document identity; these orphan entries confuse users. Source-level removal is cleaner than our current CSS masking. Ideally make it a prop (`hideNewFile?: boolean`) so upstream could accept it. | Menubar File menu | Medium |
@@ -121,6 +121,20 @@ logger.info('[seedControllerFromBlob] parsed', {
 
 Open a fresh xlsx, check the console — we'll know in one render whether
 blob download failed, isFirstUser was false, or SheetJS returned empty.
+
+## Known repo-level breakage (not caused by any patch)
+
+- **`yarn test` does not run.** The flatten commit (`d77a276 feat: Buil`)
+  dropped `scripts/jest.config.js` + `scripts/jest.setup.js` +
+  `scripts/css-transform.js` + `scripts/css-mock.js` without relocating
+  them to the flat layout. Every existing test under `src/**/__tests__/`
+  fails to transform (Babel parser chokes on `: Type` syntax because no
+  `ts-jest` preset is wired up). This is pre-existing; patch #1's new
+  test file (`src/controller/__tests__/workerGuard.test.ts`) is written
+  against the original ts-jest + jsdom setup and will run once the config
+  is restored. Suggested follow-up commit: restore `jest.config.js` +
+  `jest.setup.js` at repo root with paths updated for the flat layout.
+  Out of scope for the five patches in the roadmap above.
 
 ## Session handover
 
