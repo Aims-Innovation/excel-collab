@@ -9,7 +9,7 @@ _Living document tracking the port of `nusr/excel` (excel-collab) into
 |---|---|
 | `web-consumer` on branch `AzharGhani/consume-excel-collab-fork` | Points at fork tag `release/document-editor-v0.1.13.2`. React + react-dom pinned to 19.1.0 (resolutions + overrides). `optimizePackageImports` no longer routes React through Next's vendored canary. PDFViewer lazy-loaded + `transpilePackages`. Stale `patches/` dir + `patch-package` hook removed. |
 | `Aims-Innovation/excel-collab` on branch `document-editor` | Clean flatten (monorepo stripped to `excel-collab` sub-package). Vite externalizes `react` / `react-dom` + subpaths so react-dom stays in the consumer. **No yally customizations ported yet** — this is still the vanilla upstream shape, rebuilt. |
-| `Aims-Innovation/excel-collab` on branch `claude/restart-dev-server-ufgAZ` | **All five roadmap patches landed** and `lib/` rebuilt. Tagged `release/document-editor-v0.1.13.3`. Version bumped to `0.1.13-fork.3`. Ready for the web-consumer pin to be bumped. |
+| `Aims-Innovation/excel-collab` on branch `claude/restart-dev-server-ufgAZ` | **All five roadmap patches landed** and `lib/` rebuilt. Version bumped to `0.1.13-fork.3`. Annotated tag `release/document-editor-v0.1.13.3` exists locally on this branch's tip (`790b9ef`) but the automation environment rejected the tag push (HTTP 403 — branch pushes only). A human with tag-push rights needs to run `git push origin release/document-editor-v0.1.13.3` after pulling the branch, or recreate the tag at commit `790b9ef` and push. Once tagged, bump the web-consumer pin. |
 
 ## What works after the switch
 
