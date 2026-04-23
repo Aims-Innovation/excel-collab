@@ -1,11 +1,16 @@
 /**
- * Wraps a Worker so that postMessage survives a payload containing
- * non-structured-cloneable values (functions, symbols, class instances with
- * method properties). On DataCloneError the payload is sanitized and posted
- * again, so a single bad cell can't kill the canvas render pipeline.
+ * Wraps a Worker so that a DataCloneError on postMessage surfaces with
+ * enough context to debug it, instead of failing deep inside comlink with
+ * no indication of which payload key was the culprit.
  *
- * The fast path is a direct passthrough — no per-message overhead when the
- * payload is already cloneable, which is the common case.
+ * IMPORTANT: this guard no longer sanitizes-and-retries. The previous
+ * version dropped functions from the payload and silently retried, which
+ * masked real rendering bugs (the render worker got a gutted payload and
+ * silently drew nothing). That behavior is removed.
+ *
+ * Fast path: direct passthrough, zero overhead.
+ * Error path: walk the payload, find the first non-cloneable value with
+ * its key path, log one diagnostic, then rethrow so the caller sees it.
  */
 
 type PostMessageArgs =
@@ -21,15 +26,33 @@ function isDataCloneError(err: unknown): boolean {
   );
 }
 
-function sanitize(value: unknown, seen: WeakSet<object>): unknown {
+function describeNonCloneable(value: unknown): string | null {
   if (value === null) return null;
   const t = typeof value;
-  if (t === 'undefined') return undefined;
-  if (t === 'function' || t === 'symbol') return undefined;
-  if (t !== 'object') return value;
+  if (t === 'function') {
+    const fn = value as { name?: string; toString?: () => string };
+    return `function ${fn.name || '(anonymous)'} ${
+      typeof fn.toString === 'function' ? fn.toString().slice(0, 80) : ''
+    }`;
+  }
+  if (t === 'symbol') return 'symbol';
+  return null;
+}
 
+function findFirstNonCloneable(
+  value: unknown,
+  path: string,
+  seen: WeakSet<object>,
+  maxDepth: number,
+): { path: string; description: string } | null {
+  if (maxDepth <= 0) return null;
+
+  const direct = describeNonCloneable(value);
+  if (direct !== null) return { path, description: direct };
+
+  if (value === null || typeof value !== 'object') return null;
   const obj = value as object;
-  if (seen.has(obj)) return undefined;
+  if (seen.has(obj)) return null;
   seen.add(obj);
 
   if (
@@ -38,71 +61,91 @@ function sanitize(value: unknown, seen: WeakSet<object>): unknown {
     obj instanceof Date ||
     obj instanceof RegExp ||
     obj instanceof Blob ||
-    obj instanceof File ||
-    (typeof MessagePort !== 'undefined' && obj instanceof MessagePort)
+    obj instanceof File
   ) {
-    return obj;
+    return null;
   }
 
   if (obj instanceof Map) {
-    const out = new Map();
+    let i = 0;
     for (const [k, v] of obj) {
-      const sk = sanitize(k, seen);
-      const sv = sanitize(v, seen);
-      if (sk !== undefined && sv !== undefined) out.set(sk, sv);
+      const found =
+        findFirstNonCloneable(k, `${path}.key[${i}]`, seen, maxDepth - 1) ||
+        findFirstNonCloneable(v, `${path}.val[${i}]`, seen, maxDepth - 1);
+      if (found) return found;
+      i++;
     }
-    return out;
+    return null;
   }
   if (obj instanceof Set) {
-    const out = new Set();
+    let i = 0;
     for (const v of obj) {
-      const sv = sanitize(v, seen);
-      if (sv !== undefined) out.add(sv);
+      const found = findFirstNonCloneable(
+        v,
+        `${path}[${i}]`,
+        seen,
+        maxDepth - 1,
+      );
+      if (found) return found;
+      i++;
     }
-    return out;
+    return null;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((v) => sanitize(v, seen));
+    for (let i = 0; i < obj.length; i++) {
+      const found = findFirstNonCloneable(
+        obj[i],
+        `${path}[${i}]`,
+        seen,
+        maxDepth - 1,
+      );
+      if (found) return found;
+    }
+    return null;
   }
 
-  const plain: Record<string, unknown> = {};
   for (const k of Object.keys(obj)) {
-    const v = sanitize((obj as Record<string, unknown>)[k], seen);
-    if (v !== undefined) plain[k] = v;
+    const found = findFirstNonCloneable(
+      (obj as Record<string, unknown>)[k],
+      `${path}.${k}`,
+      seen,
+      maxDepth - 1,
+    );
+    if (found) return found;
   }
-  return plain;
+  return null;
 }
-
-let warnedOnce = false;
 
 export function guardWorkerPostMessage(worker: Worker): Worker {
   const original = worker.postMessage.bind(worker);
+  let diagnosedOnce = false;
   worker.postMessage = ((...args: PostMessageArgs) => {
     try {
       (original as (...a: PostMessageArgs) => void)(...args);
     } catch (err) {
       if (!isDataCloneError(err)) throw err;
-      const [message, second] = args;
-      const sanitized = sanitize(message, new WeakSet());
-      if (!warnedOnce) {
-        warnedOnce = true;
+      if (!diagnosedOnce) {
+        diagnosedOnce = true;
+        const [message] = args;
+        const culprit = findFirstNonCloneable(
+          message,
+          'payload',
+          new WeakSet(),
+          32,
+        );
         // eslint-disable-next-line no-console
-        console.warn(
-          '[excel-collab] worker.postMessage: payload contained ' +
-            'non-cloneable values; sanitized and retried. ' +
-            '(Subsequent occurrences will be silent.)',
-          err,
+        console.error(
+          '[excel-collab] worker.postMessage: DataCloneError. ' +
+            'The render worker received a non-cloneable payload and will not render. ' +
+            'First non-cloneable value found at:',
+          culprit ? culprit.path : '(not found within traversal depth)',
+          culprit ? `type: ${culprit.description}` : '',
+          '\nRaw payload:',
+          args[0],
         );
       }
-      if (second === undefined) {
-        (original as (m: unknown) => void)(sanitized);
-      } else {
-        (original as (...a: PostMessageArgs) => void)(
-          sanitized,
-          second as Transferable[] & StructuredSerializeOptions,
-        );
-      }
+      throw err;
     }
   }) as Worker['postMessage'];
   return worker;

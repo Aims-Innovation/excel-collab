@@ -66,6 +66,19 @@ export class MainCanvas implements MainView {
     }
     const copyRange = controller.getCopyRange();
     const jsonData = controller.toJSON();
+    // Y.Map#toJSON recursively unwraps only AbstractType (Y-type) values;
+    // plain-object values stored into a Y.Map are returned raw, which can
+    // carry references back to the owning Y.Doc (whose EventEmitter holds
+    // non-cloneable listener functions). JSON-round-tripping the four
+    // fields sourced from Y.Map#toJSON strips any such residual reference
+    // before the payload crosses the worker boundary.
+    const plainSheetData = JSON.parse(JSON.stringify(jsonData.worksheets));
+    const plainCustomHeight = JSON.parse(JSON.stringify(jsonData.customHeight));
+    const plainCustomWidth = JSON.parse(JSON.stringify(jsonData.customWidth));
+    const plainAutoFilter =
+      jsonData.autoFilter[currentId] === undefined
+        ? undefined
+        : JSON.parse(JSON.stringify(jsonData.autoFilter[currentId]));
     const eventData: RequestRender = {
       changeSet: data.changeSet,
       theme: getTheme(),
@@ -76,10 +89,10 @@ export class MainCanvas implements MainView {
       range: controller.getActiveRange().range,
       copyRange,
       currentMergeCells: controller.getMergeCellList(currentId),
-      customHeight: jsonData.customHeight,
-      customWidth: jsonData.customWidth,
-      sheetData: jsonData.worksheets,
-      autoFilter: jsonData.autoFilter[currentId],
+      customHeight: plainCustomHeight,
+      customWidth: plainCustomWidth,
+      sheetData: plainSheetData,
+      autoFilter: plainAutoFilter,
     };
 
     return this.controller

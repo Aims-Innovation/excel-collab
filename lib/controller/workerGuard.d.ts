@@ -1,10 +1,15 @@
 /**
- * Wraps a Worker so that postMessage survives a payload containing
- * non-structured-cloneable values (functions, symbols, class instances with
- * method properties). On DataCloneError the payload is sanitized and posted
- * again, so a single bad cell can't kill the canvas render pipeline.
+ * Wraps a Worker so that a DataCloneError on postMessage surfaces with
+ * enough context to debug it, instead of failing deep inside comlink with
+ * no indication of which payload key was the culprit.
  *
- * The fast path is a direct passthrough — no per-message overhead when the
- * payload is already cloneable, which is the common case.
+ * IMPORTANT: this guard no longer sanitizes-and-retries. The previous
+ * version dropped functions from the payload and silently retried, which
+ * masked real rendering bugs (the render worker got a gutted payload and
+ * silently drew nothing). That behavior is removed.
+ *
+ * Fast path: direct passthrough, zero overhead.
+ * Error path: walk the payload, find the first non-cloneable value with
+ * its key path, log one diagnostic, then rethrow so the caller sees it.
  */
 export declare function guardWorkerPostMessage(worker: Worker): Worker;

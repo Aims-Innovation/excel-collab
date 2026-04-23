@@ -7,12 +7,12 @@ function makeFakeWorker(behavior: (msg: unknown) => void): Worker {
 }
 
 describe('guardWorkerPostMessage', () => {
-  let warnSpy: jest.SpyInstance;
+  let errorSpy: jest.SpyInstance;
   beforeEach(() => {
-    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
-    warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   test('passes cloneable payloads straight through', () => {
@@ -24,95 +24,79 @@ describe('guardWorkerPostMessage', () => {
     worker.postMessage(payload);
 
     expect(received).toEqual([payload]);
-    expect(warnSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  test('sanitizes and retries on DataCloneError', () => {
-    const received: unknown[] = [];
-    let firstCall = true;
-    const worker = makeFakeWorker((m) => {
-      if (firstCall) {
-        firstCall = false;
-        const err = new DOMException('fn not cloneable', 'DataCloneError');
-        throw err;
-      }
-      received.push(m);
+  test('rethrows DataCloneError with enriched diagnostics (no silent retry)', () => {
+    const worker = makeFakeWorker(() => {
+      throw new DOMException('fn not cloneable', 'DataCloneError');
     });
     guardWorkerPostMessage(worker);
 
     const fn = () => 42;
     const payload = {
-      keep: 'ok',
-      drop: fn,
-      nested: { inner: fn, also: 'kept' },
-      list: [1, fn, 2],
+      sheetData: { r1c1: { value: 'kept' } },
+      autoFilter: {
+        range: { row: 0, col: 0, rowCount: 1, colCount: 1 },
+        onReady: fn,
+      },
     };
-    worker.postMessage(payload);
 
-    expect(received).toHaveLength(1);
-    expect(received[0]).toEqual({
-      keep: 'ok',
-      nested: { also: 'kept' },
-      list: [1, undefined, 2],
-    });
-    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(() => worker.postMessage(payload)).toThrow(DOMException);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const msg = String(errorSpy.mock.calls[0][1]);
+    expect(msg).toContain('payload.autoFilter.onReady');
   });
 
-  test('rethrows non-DataCloneError exceptions unchanged', () => {
+  test('rethrows non-DataCloneError exceptions unchanged and does not log', () => {
     const worker = makeFakeWorker(() => {
       throw new Error('boom');
     });
     guardWorkerPostMessage(worker);
 
     expect(() => worker.postMessage({ any: 'thing' })).toThrow('boom');
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  test('diagnostic fires only once across repeated failures', () => {
+    const worker = makeFakeWorker(() => {
+      throw new DOMException('x', 'DataCloneError');
+    });
+    guardWorkerPostMessage(worker);
+
+    for (let i = 0; i < 5; i++) {
+      try {
+        worker.postMessage({ fn: () => i });
+      } catch {
+        /* expected */
+      }
+    }
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('diagnostic reports symbol values', () => {
+    const worker = makeFakeWorker(() => {
+      throw new DOMException('x', 'DataCloneError');
+    });
+    guardWorkerPostMessage(worker);
+
+    expect(() =>
+      worker.postMessage({ meta: { tag: Symbol('y-ref') } }),
+    ).toThrow();
+    const loggedPath = String(errorSpy.mock.calls[0][1]);
+    expect(loggedPath).toContain('payload.meta.tag');
   });
 
   test('handles circular references without stack overflow', () => {
-    const received: unknown[] = [];
-    let firstCall = true;
-    const worker = makeFakeWorker((m) => {
-      if (firstCall) {
-        firstCall = false;
-        throw new DOMException('circular', 'DataCloneError');
-      }
-      received.push(m);
+    const worker = makeFakeWorker(() => {
+      throw new DOMException('x', 'DataCloneError');
     });
     guardWorkerPostMessage(worker);
 
     const a: Record<string, unknown> = { name: 'a' };
     const b: Record<string, unknown> = { name: 'b', ref: a };
     a.ref = b;
-    worker.postMessage(a);
 
-    expect(received).toHaveLength(1);
-    const out = received[0] as Record<string, unknown>;
-    expect(out.name).toBe('a');
-    expect((out.ref as Record<string, unknown>).name).toBe('b');
-  });
-
-  test('preserves transfer list on sanitized retry', () => {
-    const calls: Array<{ msg: unknown; second: unknown }> = [];
-    let firstCall = true;
-    const worker = makeFakeWorker(function (
-      this: unknown,
-      ...args: unknown[]
-    ) {
-      if (firstCall) {
-        firstCall = false;
-        throw new DOMException('x', 'DataCloneError');
-      }
-      calls.push({ msg: args[0], second: args[1] });
-    } as unknown as (m: unknown) => void);
-    guardWorkerPostMessage(worker);
-
-    const transferable = new ArrayBuffer(4);
-    (worker.postMessage as (m: unknown, t: Transferable[]) => void)(
-      { buf: transferable, fn: () => 1 },
-      [transferable],
-    );
-
-    expect(calls).toHaveLength(1);
-    expect(calls[0].second).toEqual([transferable]);
-    expect((calls[0].msg as { buf: ArrayBuffer }).buf).toBe(transferable);
+    expect(() => worker.postMessage(a)).toThrow();
   });
 });
