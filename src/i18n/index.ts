@@ -57,4 +57,9 @@ function i18nConfig() {
 
 const i18n = i18nConfig();
 
+if (typeof window !== 'undefined') {
+  (window as unknown as { __yallyExcelI18n?: typeof i18n }).__yallyExcelI18n =
+    i18n;
+}
+
 export default i18n;
