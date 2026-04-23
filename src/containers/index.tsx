@@ -1,5 +1,5 @@
 import styles from './index.module.css';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import FormulaBarContainer from './FormulaBar';
 import ToolbarContainer from './ToolBar';
 import CanvasContainer from './canvas';
@@ -14,7 +14,13 @@ function useCollaboration() {
   const [isLoading, setIsLoading] = useState(true);
   const setFileInfo = useUserInfo((s) => s.setFileInfo);
   const { provider, controller, awareness } = useExcel();
+  const didInitRef = useRef(false);
+  const didWireAwarenessRef = useRef(false);
   useEffect(() => {
+    if (didInitRef.current) {
+      return;
+    }
+    didInitRef.current = true;
     async function init() {
       if (!provider) {
         if (controller.getSheetList().length === 0) {
@@ -43,6 +49,10 @@ function useCollaboration() {
     if (!awareness) {
       return;
     }
+    if (didWireAwarenessRef.current) {
+      return;
+    }
+    didWireAwarenessRef.current = true;
     const doc = controller.getHooks().doc;
     awareness.on('update', () => {
       const list: UserItem[] = [];

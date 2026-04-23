@@ -4,7 +4,13 @@ import {
   StateContext,
   StateContextValue,
 } from './containers';
-import { memo, useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { initController } from './controller';
 import Worker from './worker?worker&inline';
 import { Doc } from 'yjs';
@@ -25,6 +31,7 @@ export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
   const { doc, provider, awareness, docConfig } = props;
 
   const [value, setValue] = useState<StateContextValue | undefined>(undefined);
+  const didBootstrapRef = useRef(false);
   const language = useSyncExternalStore(
     i18n.subscribe,
     getLanguageSnapshot,
@@ -32,6 +39,10 @@ export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
   );
 
   useEffect(() => {
+    if (didBootstrapRef.current) {
+      return;
+    }
+    didBootstrapRef.current = true;
     i18n.init();
 
     const controller = initController({
