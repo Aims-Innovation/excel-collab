@@ -11,6 +11,10 @@ export type EditorProps = {
     menubarRightChildren?: React.ReactNode;
     toolbarChildren?: React.ReactNode;
     sheetBarChildren?: React.ReactNode;
+    /** Hide the "New File" entry in the File menu (host app owns document creation). */
+    hideNewFile?: boolean;
+    /** Hide the "Rename File" menu entry and the clickable filename widget (host app owns document naming). */
+    hideRenameFile?: boolean;
 };
 declare const ExcelEditor: React.FunctionComponent<EditorProps>;
 export * from './store';
