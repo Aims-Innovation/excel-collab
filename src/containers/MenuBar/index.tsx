@@ -14,10 +14,12 @@ import { v4 } from 'uuid';
 type Props = {
   leftChildren?: React.ReactNode;
   rightChildren?: React.ReactNode;
+  hideNewFile?: boolean;
+  hideRenameFile?: boolean;
 };
 
 export const MenuBarContainer: React.FunctionComponent<Props> = memo(
-  ({ leftChildren, rightChildren }) => {
+  ({ leftChildren, rightChildren, hideNewFile, hideRenameFile }) => {
     const { controller, provider } = useExcel();
     const [visible, setVisible] = useState(false);
     const handleExportXLSX = useCallback(() => {
@@ -68,21 +70,27 @@ export const MenuBarContainer: React.FunctionComponent<Props> = memo(
     return (
       <div className={styles['menubar-container']} data-testid="menubar">
         <div className={styles['menubar-menu']}>
-          <File visible={visible} setVisible={setVisible} />
+          {!hideRenameFile && (
+            <File visible={visible} setVisible={setVisible} />
+          )}
           <Menu
             label={i18n.t('file')}
             className={styles.menu}
             testId="menubar-excel"
           >
-            <MenuItem onClick={handleAddDocument} testId="menubar-new-excel">
-              {i18n.t('new-file')}
-            </MenuItem>
-            <MenuItem
-              onClick={() => setVisible(true)}
-              testId="menubar-new-excel"
-            >
-              {i18n.t('rename-file')}
-            </MenuItem>
+            {!hideNewFile && (
+              <MenuItem onClick={handleAddDocument} testId="menubar-new-excel">
+                {i18n.t('new-file')}
+              </MenuItem>
+            )}
+            {!hideRenameFile && (
+              <MenuItem
+                onClick={() => setVisible(true)}
+                testId="menubar-rename-excel"
+              >
+                {i18n.t('rename-file')}
+              </MenuItem>
+            )}
             <MenuItem testId="menubar-import-xlsx">
               <input
                 type="file"
