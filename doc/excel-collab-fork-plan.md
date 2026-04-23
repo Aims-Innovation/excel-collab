@@ -9,6 +9,7 @@ _Living document tracking the port of `nusr/excel` (excel-collab) into
 |---|---|
 | `web-consumer` on branch `AzharGhani/consume-excel-collab-fork` | Points at fork tag `release/document-editor-v0.1.13.2`. React + react-dom pinned to 19.1.0 (resolutions + overrides). `optimizePackageImports` no longer routes React through Next's vendored canary. PDFViewer lazy-loaded + `transpilePackages`. Stale `patches/` dir + `patch-package` hook removed. |
 | `Aims-Innovation/excel-collab` on branch `document-editor` | Clean flatten (monorepo stripped to `excel-collab` sub-package). Vite externalizes `react` / `react-dom` + subpaths so react-dom stays in the consumer. **No yally customizations ported yet** — this is still the vanilla upstream shape, rebuilt. |
+| `Aims-Innovation/excel-collab` on branch `claude/restart-dev-server-ufgAZ` | **All five roadmap patches landed** and `lib/` rebuilt. Tagged `release/document-editor-v0.1.13.3`. Version bumped to `0.1.13-fork.3`. Ready for the web-consumer pin to be bumped. |
 
 ## What works after the switch
 
@@ -151,7 +152,7 @@ blob download failed, isFirstUser was false, or SheetJS returned empty.
 
 - Fork: https://github.com/Aims-Innovation/excel-collab
 - Fork branch: `document-editor`
-- Fork latest tag: `release/document-editor-v0.1.13.2`
+- Fork latest tag: `release/document-editor-v0.1.13.3` (previous: `release/document-editor-v0.1.13.2`)
 - web-consumer branch: `AzharGhani/consume-excel-collab-fork`
 - Unmerged helper PR: #1581 (theme + StrictMode + `PermissionDenied` listener)
 - Backend hub PR (verified contract): `backend-centralized` PR #785
