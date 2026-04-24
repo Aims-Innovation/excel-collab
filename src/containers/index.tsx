@@ -6,11 +6,19 @@ import CanvasContainer from './canvas';
 import SheetBarContainer from './SheetBar';
 import MenuBarContainer from './MenuBar';
 import { useExcel, useUserInfo } from './store';
-import { UserItem } from '../types';
+import { UserItem, SYNC_FLAG } from '../types';
 import { modelToChangeSet } from '../util';
 import { Loading } from '../components';
 import i18n from '../i18n';
 import { collaborationLog, perfMeasure } from '../util/debug';
+
+// Membership check for transactions that originate from the Controller
+// (via the @transaction() decorator). Kept as a module-level Set so the
+// doc.on('update') handler can cheap-check every update without
+// rebuilding it on each event.
+const LOCAL_ORIGINS: ReadonlySet<unknown> = new Set<unknown>(
+  Object.values(SYNC_FLAG),
+);
 
 function useCollaboration() {
   const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +81,15 @@ function useCollaboration() {
     awareness.on('update', awarenessHandler);
 
     const docHandler = (_a: unknown, _b: unknown, _c: unknown, tran: any) => {
+      // Skip updates that the Controller originated via @transaction().
+      // Controller.emitChange() already dispatches renderChange for its
+      // own mutations; without this filter every local write would be
+      // followed by a duplicate render -- doubling work and, under
+      // rapid interactions like column drag, spiraling into an
+      // unresponsive render queue.
+      if (LOCAL_ORIGINS.has(tran?.origin)) {
+        return;
+      }
       const changeSet = modelToChangeSet(tran);
       controller.emit('renderChange', { changeSet });
     };

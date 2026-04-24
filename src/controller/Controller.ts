@@ -413,6 +413,17 @@ export class Controller
   }
   @transaction()
   setColWidth(col: number, width: number, sheetId?: string): void {
+    // Controller-level guard: skip work entirely if the width is
+    // already correct. Without this, renderCallback's auto-fit pass
+    // calls setColWidth on every measurable column after every render
+    // even when nothing changed, and each call still added
+    // 'customWidth' to the changeSet and fired emitChange -> a fresh
+    // render. During a column drag that compounds to an unresponsive
+    // queue of repeat renders.
+    const current = this.getColWidth(col, sheetId);
+    if (current === width) {
+      return;
+    }
     this.model.setColWidth(col, width, sheetId);
     this.changeSet.add('customWidth');
     this.emitChange();
@@ -426,6 +437,11 @@ export class Controller
   }
   @transaction()
   setRowHeight(row: number, height: number, sheetId?: string) {
+    // Same guard as setColWidth above; auto-fit re-applies every render.
+    const current = this.getRowHeight(row, sheetId);
+    if (current === height) {
+      return;
+    }
     this.model.setRowHeight(row, height, sheetId);
     this.changeSet.add('customHeight');
     this.emitChange();

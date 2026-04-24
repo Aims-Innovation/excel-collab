@@ -97,7 +97,9 @@ export class MainCanvas implements MainView {
       });
     }
     const copyRange = controller.getCopyRange();
-    const jsonData = controller.toJSON();
+    const jsonData = await perfMeasure('controller.toJSON', () =>
+      controller.toJSON(),
+    );
     // NOTE: v0.1.13.4 added a defensive JSON.parse(JSON.stringify(...))
     // around sheetData / customHeight / customWidth / autoFilter to
     // strip any Y.Doc reference that leaked through Y.Map#toJSON's
@@ -125,9 +127,11 @@ export class MainCanvas implements MainView {
       autoFilter: jsonData.autoFilter[currentId],
     };
 
-    return this.controller
-      .getHooks()
-      .worker.render(eventData, proxy(this.renderCallback));
+    return perfMeasure('worker.render', () =>
+      this.controller
+        .getHooks()
+        .worker.render(eventData, proxy(this.renderCallback)),
+    );
   }
   resize() {
     const { canvas } = this;
