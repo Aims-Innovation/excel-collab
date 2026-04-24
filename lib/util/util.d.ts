@@ -23,3 +23,21 @@ export declare function getRandomColor(): string;
 export declare function stringToUint8Array(str: string): Uint8Array<ArrayBuffer>;
 export declare function uint8ArrayToString(bytes: Uint8Array): string;
 export declare function modelToChangeSet(list: Transaction): Set<ChangeEventType>;
+/**
+ * Adjust the decimal-places in an Excel-style number format string.
+ *
+ * Examples:
+ *   adjustDecimalFormat('General', 1)   -> '0.0'
+ *   adjustDecimalFormat('0',       1)   -> '0.0'
+ *   adjustDecimalFormat('0.00',    1)   -> '0.000'
+ *   adjustDecimalFormat('0.00',   -1)   -> '0.0'
+ *   adjustDecimalFormat('0.0',    -1)   -> '0'
+ *   adjustDecimalFormat('#,##0.00', 1)  -> '#,##0.000'
+ *   adjustDecimalFormat('0%',      1)   -> '0.0%'
+ *   adjustDecimalFormat('0.00%',  -1)   -> '0.0%'
+ *
+ * Formats we don't recognise (scientific, fractions, dates, custom
+ * currency with escaped text) are returned unchanged — users can still
+ * use the explicit "More formats" dropdown for those.
+ */
+export declare function adjustDecimalFormat(format: string, delta: 1 | -1): string;

@@ -1,6 +1,6 @@
 import { default as React, FunctionComponent, CSSProperties } from 'react';
 export interface ButtonProps {
-    type?: 'normal' | 'circle' | 'plain' | 'primary';
+    type?: 'normal' | 'circle' | 'plain' | 'primary' | 'toolbar';
     style?: CSSProperties;
     active?: boolean;
     disabled?: boolean;

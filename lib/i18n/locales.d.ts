@@ -9,6 +9,12 @@ declare const defaultLanguageTranslation: {
     menu: string;
     file: string;
     insert: string;
+    'clear-format': string;
+    'format-as-currency': string;
+    'format-as-percent': string;
+    'decrease-decimal': string;
+    'increase-decimal': string;
+    'insert-function': string;
     rename: string;
     reset: string;
     hide: string;
@@ -111,5 +117,5 @@ declare const defaultLanguageTranslation: {
     'log-out': string;
 };
 export type TranslationKeys = keyof typeof defaultLanguageTranslation;
-declare const locales: Record<LanguageType, Record<TranslationKeys, string>>;
+declare const locales: Record<LanguageType, Partial<Record<TranslationKeys, string>>>;
 export default locales;
