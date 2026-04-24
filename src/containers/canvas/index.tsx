@@ -62,6 +62,11 @@ export const CanvasContainer = memo(() => {
 
   const ref = useRef<HTMLCanvasElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
+  // Holds the MainCanvas instance created for the current <canvas>
+  // DOM node. Non-singleton on purpose: CanvasContainer can mount
+  // multiple times per session and each mount creates a fresh canvas
+  // that needs its own transferControlToOffscreen + MainCanvas.
+  const mainCanvasRef = useRef<MainCanvas | null>(null);
   // Remembers the last resize-adjacent pointerdown so we can detect a
   // double-click ourselves (React's onDoubleClick is unreliable when a
   // pointerdown elsewhere calls preventDefault or captures the pointer).
@@ -72,7 +77,12 @@ export const CanvasContainer = memo(() => {
     if (!ref.current) {
       return;
     }
-    return initCanvas(controller, ref.current);
+    const { mainCanvas, dispose } = initCanvas(controller, ref.current);
+    mainCanvasRef.current = mainCanvas;
+    return () => {
+      dispose();
+      mainCanvasRef.current = null;
+    };
   }, []);
   const handleContextMenu = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -91,7 +101,7 @@ export const CanvasContainer = memo(() => {
     });
   };
   const applyResizeAutofit = useCallback((hit: ResizeHit) => {
-    const mc = MainCanvas.instance;
+    const mc = mainCanvasRef.current;
     if (!mc) return;
     if (hit.axis === 'col') {
       const measured = mc.getMeasuredColWidth(hit.index);

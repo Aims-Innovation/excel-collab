@@ -309,7 +309,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           disabled={!canUndo}
           onClick={undo}
           testId="toolbar-undo"
-          title="Undo (Ctrl+Z)"
+          title={i18n.t('toolbar-undo')}
           className={styles['icon-center']}
         >
           <Icon name="undo" />
@@ -319,7 +319,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           disabled={!canRedo}
           onClick={redo}
           testId="toolbar-redo"
-          title="Redo (Ctrl+Y)"
+          title={i18n.t('toolbar-redo')}
           className={styles['icon-center']}
         >
           <Icon name="redo" />
@@ -444,7 +444,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           active={cellStyle.isBold}
           onClick={toggleBold}
           testId="toolbar-bold"
-          title="Bold (Ctrl+B)"
+          title={i18n.t('toolbar-bold')}
         >
           <span className={styles.bold}>B</span>
         </Button>
@@ -453,7 +453,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           active={cellStyle.isItalic}
           onClick={toggleItalic}
           testId="toolbar-italic"
-          title="Italic (Ctrl+I)"
+          title={i18n.t('toolbar-italic')}
         >
           <span className={styles.italic}>I</span>
         </Button>
@@ -462,7 +462,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           active={cellStyle.isStrike}
           onClick={toggleStrike}
           testId="toolbar-strike"
-          title="Strikethrough (Ctrl+5)"
+          title={i18n.t('toolbar-strike')}
           className={styles['icon-center']}
         >
           <Icon name="strikethrough" />
@@ -470,7 +470,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
         <Select
           data={underlineOptionList}
           value={cellStyle.underline}
-          title="Underline (Ctrl+U)"
+          title={i18n.t('toolbar-underline')}
           onChange={setUnderline}
           testId="toolbar-underline"
         />
@@ -489,7 +489,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
             style={fontStyle}
             testId="toolbar-font-color"
             className={styles['icon-center']}
-            title="Text color"
+            title={i18n.t('toolbar-text-color')}
           >
             <Icon name="fontColor" />
           </Button>
@@ -505,7 +505,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
             style={fillStyle}
             testId="toolbar-fill-color"
             className={styles['icon-center']}
-            title="Fill color"
+            title={i18n.t('toolbar-fill-color')}
           >
             <FillColorIcon />
           </Button>
@@ -521,7 +521,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           onClick={horizontalLeft}
           testId="toolbar-horizontal-left"
           className={styles['icon-center']}
-          title="Align left"
+          title={i18n.t('toolbar-align-left')}
         >
           <Icon name="horizontalLeft" />
         </Button>
@@ -531,7 +531,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           onClick={horizontalCenter}
           testId="toolbar-horizontal-center"
           className={styles['icon-center']}
-          title="Align center"
+          title={i18n.t('toolbar-align-center')}
         >
           <Icon name="horizontalCenter" />
         </Button>
@@ -541,7 +541,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           onClick={horizontalRight}
           testId="toolbar-horizontal-right"
           className={styles['icon-center']}
-          title="Align right"
+          title={i18n.t('toolbar-align-right')}
         >
           <Icon name="horizontalRight" />
         </Button>
@@ -551,7 +551,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           onClick={verticalTop}
           testId="toolbar-vertical-top"
           className={styles['icon-center']}
-          title="Align top"
+          title={i18n.t('toolbar-align-top')}
         >
           <Icon name="verticalTop" />
         </Button>
@@ -561,7 +561,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           onClick={verticalMiddle}
           testId="toolbar-vertical-middle"
           className={styles['icon-center']}
-          title="Align middle"
+          title={i18n.t('toolbar-align-middle')}
         >
           <Icon name="verticalMiddle" />
         </Button>
@@ -571,7 +571,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           onClick={verticalBottom}
           testId="toolbar-vertical-bottom"
           className={styles['icon-center']}
-          title="Align bottom"
+          title={i18n.t('toolbar-align-bottom')}
         >
           <Icon name="verticalBottom" />
         </Button>

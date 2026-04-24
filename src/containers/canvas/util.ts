@@ -317,13 +317,16 @@ function computeCanvasSize(canvas: HTMLCanvasElement) {
 export function initCanvas(
   controller: IController,
   canvas: HTMLCanvasElement,
-): () => void {
+): { mainCanvas: MainCanvas; dispose: () => void } {
   useCoreStore.getState().setFontFamilies(initFontFamilyList());
   useUserInfo.getState().setClientId(controller.getHooks().doc.clientID);
 
-  const mainCanvas =
-    MainCanvas.instance ||
-    (MainCanvas.instance = new MainCanvas(controller, canvas));
+  // Fresh instance per initCanvas call. transferControlToOffscreen is
+  // one-shot per canvas element; each mount's canvas needs its own.
+  // Returning the instance lets the caller hold a ref for features
+  // that need to read from it (e.g. double-click auto-fit reading the
+  // last measured colMap/rowMap).
+  const mainCanvas = new MainCanvas(controller, canvas);
   const renderCanvas = (changeSet: Set<ChangeEventType>) => {
     const size = computeCanvasSize(canvas);
     if (size) {
@@ -371,10 +374,11 @@ export function initCanvas(
       toast({ type, message, duration, testId: testId ?? `${type}-toast` });
     },
   );
-  return () => {
+  const dispose = () => {
     offGlobalEvent();
     offRenderChange();
     offToastMessage();
     offModelToastMessage();
   };
+  return { mainCanvas, dispose };
 }

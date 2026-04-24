@@ -12,7 +12,17 @@ import { getTheme } from '../theme';
 import { transfer, proxy } from 'comlink';
 
 export class MainCanvas implements MainView {
-  static instance: MainCanvas;
+  // IMPORTANT: do NOT add a static `instance` singleton here. The
+  // CanvasContainer can mount and unmount multiple times across a
+  // session (modal reopen, navigation, etc.). Each mount creates a
+  // fresh <canvas> DOM element, and each canvas must have its own
+  // transferControlToOffscreen + MainCanvas. A static singleton
+  // retained the FIRST canvas forever; the worker kept drawing to
+  // that orphaned offscreen bitmap while the visible canvas from the
+  // second mount got nothing. Symptoms: blank grid on second open
+  // until a full page refresh. If you need a cross-component reference
+  // to the current MainCanvas, hold it in a React ref next to the
+  // canvas DOM node (see CanvasContainer for the pattern).
   private readonly controller: IController;
   private readonly canvas: HTMLCanvasElement;
   /**

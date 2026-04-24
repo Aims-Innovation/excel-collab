@@ -1,2 +1,6 @@
 import { IController } from '../../types';
-export declare function initCanvas(controller: IController, canvas: HTMLCanvasElement): () => void;
+import { MainCanvas } from '../../canvas';
+export declare function initCanvas(controller: IController, canvas: HTMLCanvasElement): {
+    mainCanvas: MainCanvas;
+    dispose: () => void;
+};

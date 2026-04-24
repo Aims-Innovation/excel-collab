@@ -1,6 +1,5 @@
 import { EventType, MainView, IController } from '../types';
 export declare class MainCanvas implements MainView {
-    static instance: MainCanvas;
     private readonly controller;
     private readonly canvas;
     /**
