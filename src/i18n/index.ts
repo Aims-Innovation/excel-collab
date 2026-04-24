@@ -45,12 +45,16 @@ function i18nConfig() {
       key: TranslationKeys,
       options: Record<string, string | number> = {},
     ) => {
-      const template = locales[_currentLanguage][key];
+      // Fall back to the default-language string when a translation key
+      // is missing from the current locale. Without this, .replace() on
+      // `undefined` would throw and crash the render for any translation
+      // added only to English (which the fork often does for new UI).
+      const template =
+        locales[_currentLanguage][key] ?? locales[defaultLanguage][key] ?? '';
 
-      // @ts-ignore
       return template.replace(/{([a-z]+)}/gi, (_, key) => {
         if (key in options) {
-          return options[key];
+          return String(options[key]);
         }
         throw new Error(`i18n.t not found key: "${key}"`);
       });

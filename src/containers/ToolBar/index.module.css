@@ -1,39 +1,55 @@
 .toolbar-wrapper {
-  padding: var(--mediumPadding) var(--largePadding) 0 var(--largePadding);
+  padding: 4px 8px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--borderColor);
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  min-height: 40px;
 }
-.toolbar-wrapper > * {
-  margin-right: 8px;
-  margin-bottom: var(--mediumPadding);
+.toolbar-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+.toolbar-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbarColor);
+  border-radius: 2px;
+}
+.separator {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background-color: var(--borderColor);
 }
 .toolbar-wrapper .merge-cell {
-  height: unset;
-  width: 150px;
+  width: 28px;
+  height: 28px;
 }
 .toolbar-wrapper .border {
-  height: unset;
-  width: 150px;
+  width: 28px;
+  height: 28px;
 }
 .toolbar-wrapper .merge-cell-button {
-  margin-right: 20px;
-  flex: 1;
-  border-radius: unset;
+  border-radius: 4px;
+  padding: 0 6px;
 }
 .toolbar-wrapper .number-format {
   height: unset;
-  width: 170px;
+  width: 120px;
 }
 .number-format-value {
-  text-align: center;
-  width: 100%;
-  margin-right: 20px;
+  text-align: left;
+  padding: 0 6px;
 }
 .fontFamily {
-  max-width: 200px;
+  max-width: 160px;
+  min-width: 120px;
+}
+.toolbar-wrapper .fontSize {
+  width: 64px;
 }
 .bold {
   font-weight: bold;
@@ -44,11 +60,16 @@
 .strike {
   text-decoration-line: line-through;
 }
-
-.wrap-text {
-  text-wrap: nowrap;
+.fx {
+  font-style: italic;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 500;
+  font-size: 14px;
 }
-
+.glyph {
+  font-size: 15px;
+  font-weight: 600;
+}
 .icon-center {
   display: flex;
   align-items: center;

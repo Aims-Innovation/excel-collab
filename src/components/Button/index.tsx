@@ -3,7 +3,7 @@ import { classnames, noop } from '../../util';
 import styles from './index.module.css';
 
 export interface ButtonProps {
-  type?: 'normal' | 'circle' | 'plain' | 'primary';
+  type?: 'normal' | 'circle' | 'plain' | 'primary' | 'toolbar';
   style?: CSSProperties;
   active?: boolean;
   disabled?: boolean;
@@ -36,6 +36,7 @@ export const Button: FunctionComponent<React.PropsWithChildren<ButtonProps>> =
       [styles['circle']]: type === 'circle',
       [styles['plain']]: type === 'plain',
       [styles['primary']]: type === 'primary',
+      [styles['toolbar']]: type === 'toolbar',
     });
     return (
       <button

@@ -222,3 +222,45 @@ export function modelToChangeSet(list: Transaction) {
 
   return result;
 }
+
+/**
+ * Adjust the decimal-places in an Excel-style number format string.
+ *
+ * Examples:
+ *   adjustDecimalFormat('General', 1)   -> '0.0'
+ *   adjustDecimalFormat('0',       1)   -> '0.0'
+ *   adjustDecimalFormat('0.00',    1)   -> '0.000'
+ *   adjustDecimalFormat('0.00',   -1)   -> '0.0'
+ *   adjustDecimalFormat('0.0',    -1)   -> '0'
+ *   adjustDecimalFormat('#,##0.00', 1)  -> '#,##0.000'
+ *   adjustDecimalFormat('0%',      1)   -> '0.0%'
+ *   adjustDecimalFormat('0.00%',  -1)   -> '0.0%'
+ *
+ * Formats we don't recognise (scientific, fractions, dates, custom
+ * currency with escaped text) are returned unchanged — users can still
+ * use the explicit "More formats" dropdown for those.
+ */
+export function adjustDecimalFormat(format: string, delta: 1 | -1): string {
+  const isGeneral = !format || format === 'General';
+  if (isGeneral) {
+    return delta > 0 ? '0.0' : '0';
+  }
+  // Match the first numeric group: optional commas/hashes then zeros,
+  // optionally followed by a decimal section. Doesn't match dates
+  // (which have letters) or currency-with-text-prefix (which has quotes
+  // before the numeric run).
+  const match = format.match(/([#,0]*0)(\.([#0]+))?/);
+  if (!match) return format;
+  const whole = match[0];
+  const intPart = match[1];
+  const fracPart = match[3] ?? '';
+  let newFrac = fracPart;
+  if (delta > 0) {
+    newFrac = fracPart + '0';
+    if (newFrac.length > 30) return format;
+  } else {
+    newFrac = fracPart.slice(0, -1);
+  }
+  const newBlock = newFrac ? `${intPart}.${newFrac}` : intPart;
+  return format.replace(whole, newBlock);
+}

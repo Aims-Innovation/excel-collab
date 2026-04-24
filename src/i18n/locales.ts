@@ -10,6 +10,12 @@ const defaultLanguageTranslation = {
   menu: 'Menu',
   file: 'File',
   insert: 'Insert',
+  'clear-format': 'Clear formatting',
+  'format-as-currency': 'Format as currency',
+  'format-as-percent': 'Format as percent',
+  'decrease-decimal': 'Decrease decimal places',
+  'increase-decimal': 'Increase decimal places',
+  'insert-function': 'Insert function',
   rename: 'Rename',
   reset: 'Reset',
   hide: 'Hide',
@@ -115,7 +121,7 @@ const defaultLanguageTranslation = {
 
 export type TranslationKeys = keyof typeof defaultLanguageTranslation;
 
-const locales: Record<LanguageType, Record<TranslationKeys, string>> = {
+const locales: Record<LanguageType, Partial<Record<TranslationKeys, string>>> = {
   'en-US': defaultLanguageTranslation,
   'zh-CN': {
     copy: '复制',
