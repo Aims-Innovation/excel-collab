@@ -207,16 +207,33 @@ export function uint8ArrayToString(bytes: Uint8Array) {
 export function modelToChangeSet(list: Transaction) {
   const result = new Set<ChangeEventType>();
   const set: Set<string> = new Set(KEY_LIST);
-  for (const item of list.changed.keys()) {
-    const key = item._item?.parentSub;
-    if (key && set.has(key)) {
-      result.add(key as ChangeEventType);
+  // Transaction.changed is Map<AbstractType, Set<string|null>>. The Set
+  // value carries the keys whose entries changed on that type. When the
+  // root Y.Map 'excel' itself is mutated (e.g. an applyUpdate adds
+  // top-level keys like 'worksheets', 'workbook') the root type has
+  // _item === null, so the old implementation's type._item?.parentSub
+  // lookup returned undefined and the entire change was dropped -- that
+  // was the blank-grid-until-click bug for consumers hydrating from a
+  // persisted Yjs batch.
+  //
+  // Iterating the VALUE set of each (type, keys) entry catches those
+  // root-level changes. Kept the parentSub lookup for the case where
+  // the type is itself a child whose own entries changed.
+  for (const [type, keys] of list.changed.entries()) {
+    for (const key of keys) {
+      if (key && set.has(key)) {
+        result.add(key as ChangeEventType);
+      }
+    }
+    const parentSub = type._item?.parentSub;
+    if (parentSub && set.has(parentSub)) {
+      result.add(parentSub as ChangeEventType);
     }
   }
-  for (const item of list.changedParentTypes.keys()) {
-    const key = item._item?.parentSub;
-    if (key && set.has(key)) {
-      result.add(key as ChangeEventType);
+  for (const type of list.changedParentTypes.keys()) {
+    const parentSub = type._item?.parentSub;
+    if (parentSub && set.has(parentSub)) {
+      result.add(parentSub as ChangeEventType);
     }
   }
 

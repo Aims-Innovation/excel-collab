@@ -44,13 +44,6 @@ export class MainCanvas implements MainView {
   }
   private readonly renderCallback = (result: ResponseRender) => {
     const { rowMap, colMap } = result;
-    // Overwrite rather than accumulate. Previous revisions merged into
-    // a long-lived map that grew with every render, turning these two
-    // object spreads into O(all-measurements) per paint and leaking
-    // stale measurements forever. Auto-fit only reads measurements for
-    // the currently-visible column/row (you can't double-click a
-    // header that isn't in view), so the most-recent render's maps are
-    // the only ones we need.
     this.lastMeasuredRowMap = rowMap;
     this.lastMeasuredColMap = colMap;
     const rowKeys = Object.keys(rowMap);
@@ -58,25 +51,33 @@ export class MainCanvas implements MainView {
     if (colKeys.length === 0 && rowKeys.length === 0) {
       return;
     }
+    // IMPORTANT: write measurements via the model layer, NOT through
+    // controller.setRowHeight / setColWidth. The controller methods
+    // call emitChange() which re-emits 'renderChange' -- but the
+    // canvas is already painted with these exact sizes (that's where
+    // the measurements came from). Re-emitting queues a redundant
+    // render that paints the same thing, and for N rows + M cols of
+    // measurement updates that's N+M redundant renders, each of which
+    // runs its own renderCallback and can produce further updates.
+    // During a column drag that compounded into an unresponsive
+    // render queue that never settled. Writing through the model
+    // layer persists to Y.Doc (remote peers get the update via
+    // doc.on('update'); useCollaboration filters SYNC_FLAG.MODEL-
+    // origin transactions so the main thread doesn't double-render).
     this.controller.transaction(() => {
       for (const [row, h] of Object.entries(rowMap)) {
         const r = parseInt(row, 10);
-
-        const old = this.controller.getRowHeight(r);
-        if (old === h) {
+        if (this.controller.getRowHeight(r) === h) {
           continue;
         }
-
-        this.controller.setRowHeight(r, h);
+        this.controller.model.setRowHeight(r, h);
       }
       for (const [col, w] of Object.entries(colMap)) {
         const c = parseInt(col, 10);
-        const old = this.controller.getColWidth(c);
-        if (old === w) {
+        if (this.controller.getColWidth(c) === w) {
           continue;
         }
-
-        this.controller.setColWidth(c, w);
+        this.controller.model.setColWidth(c, w);
       }
     });
   };
