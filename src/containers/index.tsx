@@ -1,5 +1,5 @@
 import styles from './index.module.css';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState, useSyncExternalStore } from 'react';
 import FormulaBarContainer from './FormulaBar';
 import ToolbarContainer from './ToolBar';
 import CanvasContainer from './canvas';
@@ -9,29 +9,26 @@ import { useExcel, useUserInfo } from './store';
 import { UserItem } from '../types';
 import { modelToChangeSet } from '../util';
 import { Loading } from '../components';
+import i18n from '../i18n';
 
 function useCollaboration() {
   const [isLoading, setIsLoading] = useState(true);
   const setFileInfo = useUserInfo((s) => s.setFileInfo);
   const { provider, controller, awareness } = useExcel();
-  const didInitRef = useRef(false);
-  const didWireAwarenessRef = useRef(false);
   useEffect(() => {
-    if (didInitRef.current) {
-      return;
-    }
-    didInitRef.current = true;
+    let cancelled = false;
     async function init() {
       if (!provider) {
         if (controller.getSheetList().length === 0) {
           controller.addFirstSheet();
         }
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
         return;
       }
       setIsLoading(true);
       const doc = controller.getHooks().doc;
       const file = await provider?.getDocument?.(doc.guid);
+      if (cancelled) return;
       const content = file?.content ?? '';
       if (content) {
         controller.fromJSON(JSON.parse(content));
@@ -43,18 +40,17 @@ function useCollaboration() {
       setIsLoading(false);
     }
     init();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!awareness) {
       return;
     }
-    if (didWireAwarenessRef.current) {
-      return;
-    }
-    didWireAwarenessRef.current = true;
     const doc = controller.getHooks().doc;
-    awareness.on('update', () => {
+    const awarenessHandler = () => {
       const list: UserItem[] = [];
       for (const item of awareness.getStates().entries()) {
         const [key, value] = item;
@@ -64,22 +60,33 @@ function useCollaboration() {
         list.push({ clientId: key, range: value.range });
       }
       useUserInfo.getState().setUsers(list);
-    });
+    };
+    awareness.on('update', awarenessHandler);
 
-    doc.on('update', (_a, _b, _c, tran) => {
+    const docHandler = (_a: unknown, _b: unknown, _c: unknown, tran: any) => {
       const changeSet = modelToChangeSet(tran);
       controller.emit('renderChange', { changeSet });
-    });
+    };
+    doc.on('update', docHandler);
 
-    controller.on('rangeChange', (range) => {
+    const offRangeChange = controller.on('rangeChange', (range) => {
       awareness.setLocalStateField('range', range);
     });
-  }, []);
+
+    return () => {
+      awareness.off('update', awarenessHandler);
+      doc.off('update', docHandler);
+      offRangeChange();
+    };
+  }, [awareness, controller]);
 
   return {
     isLoading,
   };
 }
+
+const getLanguageSnapshot = () => i18n.current;
+const getLanguageServerSnapshot = () => 'en-US';
 
 export type EditorProps = {
   style?: React.CSSProperties;
@@ -103,6 +110,15 @@ const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
     hideRenameFile,
   }) => {
     const { isLoading } = useCollaboration();
+    // Subscribe to language here so only the i18n-rendering memo'd children
+    // remount when locale changes. CanvasContainer is deliberately NOT keyed
+    // — the worker + OffscreenCanvas pipeline must survive; canvas-side
+    // i18n strings (context menu, font picker) render on-demand anyway.
+    const language = useSyncExternalStore(
+      i18n.subscribe,
+      getLanguageSnapshot,
+      getLanguageServerSnapshot,
+    );
 
     if (isLoading) {
       return <Loading />;
@@ -115,15 +131,20 @@ const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
         style={style}
       >
         <MenuBarContainer
+          key={`menubar-${language}`}
           leftChildren={menubarLeftChildren}
           rightChildren={menubarRightChildren}
           hideNewFile={hideNewFile}
           hideRenameFile={hideRenameFile}
         />
-        <ToolbarContainer>{toolbarChildren}</ToolbarContainer>
-        <FormulaBarContainer />
+        <ToolbarContainer key={`toolbar-${language}`}>
+          {toolbarChildren}
+        </ToolbarContainer>
+        <FormulaBarContainer key={`formula-${language}`} />
         <CanvasContainer />
-        <SheetBarContainer>{sheetBarChildren}</SheetBarContainer>
+        <SheetBarContainer key={`sheetbar-${language}`}>
+          {sheetBarChildren}
+        </SheetBarContainer>
       </div>
     );
   },

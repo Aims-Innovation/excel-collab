@@ -63,7 +63,7 @@ export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
 
   return (
     <StateContext.Provider value={value}>
-      {value && <ExcelEditor key={language} {...props} />}
+      {value && <ExcelEditor {...props} />}
     </StateContext.Provider>
   );
 });
