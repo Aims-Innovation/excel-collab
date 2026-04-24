@@ -88,18 +88,48 @@ export class MainCanvas implements MainView {
     const currentId = controller.getCurrentSheetId();
     const sheetInfo = controller.getSheetInfo(currentId);
     if (!sheetInfo) {
+      if (isDebugEnabled('render')) {
+        renderLog('dispatch skipped (no sheetInfo)', {
+          changeSet: Array.from(data.changeSet),
+          sheetId: currentId,
+        });
+      }
       return;
-    }
-    if (isDebugEnabled('render')) {
-      renderLog('dispatch', {
-        changeSet: Array.from(data.changeSet),
-        sheetId: currentId,
-      });
     }
     const copyRange = controller.getCopyRange();
     const jsonData = await perfMeasure('controller.toJSON', () =>
       controller.toJSON(),
     );
+    if (isDebugEnabled('render')) {
+      // Canvas element introspection. After transferControlToOffscreen()
+      // the main-thread element still exposes getBoundingClientRect()
+      // reporting the CSS display size (NOT the bitmap dimensions). If
+      // width/height here are 0, the element was not laid out at paint
+      // time — the worker's bitmap was also sized 0 (via MainCanvas
+      // .resize), so any rendering no-ops against empty canvas. If
+      // storedCanvasSize is 0 too, the "canvas-sizing race" is the
+      // cause; if only cssRect is 0 but stored is non-zero, layout
+      // changed after the first measure and no one re-measured.
+      const canvasEl = this.canvas as HTMLCanvasElement;
+      const rect = canvasEl?.getBoundingClientRect?.();
+      const sheetData = jsonData.worksheets ?? {};
+      const allKeys = Object.keys(sheetData);
+      const cellCountForSheet = allKeys.filter((k) =>
+        k.startsWith(`${currentId}_`),
+      ).length;
+      renderLog('dispatch', {
+        changeSet: Array.from(data.changeSet),
+        sheetId: currentId,
+        canvasCssRect: rect
+          ? { width: rect.width, height: rect.height }
+          : 'no getBoundingClientRect',
+        storedCanvasSize: controller.getCanvasSize(),
+        headerSize: controller.getHeaderSize(),
+        scroll: controller.getScroll(currentId),
+        totalCellCount: allKeys.length,
+        cellCountForSheet,
+      });
+    }
     // NOTE: v0.1.13.4 added a defensive JSON.parse(JSON.stringify(...))
     // around sheetData / customHeight / customWidth / autoFilter to
     // strip any Y.Doc reference that leaked through Y.Map#toJSON's

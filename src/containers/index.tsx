@@ -64,9 +64,17 @@ function useCollaboration() {
 
   useEffect(() => {
     if (!awareness) {
+      collaborationLog(
+        'awareness-wiring: skipped (no awareness provided yet); ' +
+          'doc.on(update) is NOT registered until awareness arrives',
+      );
       return;
     }
     const doc = controller.getHooks().doc;
+    collaborationLog('awareness-wiring: registering doc.on(update)', {
+      docGuid: doc.guid,
+      docClientId: doc.clientID,
+    });
     const awarenessHandler = () => {
       const list: UserItem[] = [];
       for (const item of awareness.getStates().entries()) {
@@ -88,9 +96,19 @@ function useCollaboration() {
       // rapid interactions like column drag, spiraling into an
       // unresponsive render queue.
       if (LOCAL_ORIGINS.has(tran?.origin)) {
+        collaborationLog('docHandler: skip (local origin)', {
+          origin: tran?.origin,
+        });
         return;
       }
       const changeSet = modelToChangeSet(tran);
+      collaborationLog('docHandler: fired', {
+        origin: tran?.origin,
+        changeSetSize: changeSet.size,
+        changeSet: Array.from(changeSet),
+        changedTypeCount: tran?.changed?.size ?? 0,
+        changedParentTypeCount: tran?.changedParentTypes?.size ?? 0,
+      });
       controller.emit('renderChange', { changeSet });
     };
     doc.on('update', docHandler);
