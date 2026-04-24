@@ -29,6 +29,14 @@ declare const defaultLanguageTranslation: {
     'toolbar-align-top': string;
     'toolbar-align-middle': string;
     'toolbar-align-bottom': string;
+    'section-history': string;
+    'section-clipboard': string;
+    'section-number': string;
+    'section-font': string;
+    'section-style': string;
+    'section-format': string;
+    'section-align': string;
+    'section-insert': string;
     rename: string;
     reset: string;
     hide: string;

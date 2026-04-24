@@ -1,9 +1,32 @@
 import React, { useMemo, memo, useCallback } from 'react';
 import {
-  Icon,
+  MdUndo,
+  MdRedo,
+  MdContentCopy,
+  MdContentCut,
+  MdContentPaste,
+  MdFormatClear,
+  MdAttachMoney,
+  MdPercent,
+  MdFormatBold,
+  MdFormatItalic,
+  MdStrikethroughS,
+  MdFormatColorText,
+  MdFormatColorFill,
+  MdFormatAlignLeft,
+  MdFormatAlignCenter,
+  MdFormatAlignRight,
+  MdVerticalAlignTop,
+  MdVerticalAlignCenter,
+  MdVerticalAlignBottom,
+  MdWrapText,
+  MdCallMerge,
+  MdFunctions,
+  MdFilterAlt,
+} from 'react-icons/md';
+import {
   Button,
   Select,
-  FillColorIcon,
   ColorPicker,
   SelectList,
 } from '../../components';
@@ -37,7 +60,15 @@ import {
 const CURRENCY_FORMAT = '"$"#,##0.00_);[Red]("$"#,##0.00)';
 const PERCENT_FORMAT = '0.00%';
 
-const Separator = () => <div className={styles.separator} />;
+type SectionProps = React.PropsWithChildren<{ label: string }>;
+const Section: React.FunctionComponent<SectionProps> = ({ label, children }) => (
+  <div className={styles.section}>
+    <div className={styles['section-row']}>{children}</div>
+    <span className={styles['section-label']}>{label}</span>
+  </div>
+);
+
+const iconProps = { className: styles['icon-svg'] };
 
 export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> =
   memo(({ children }) => {
@@ -252,9 +283,6 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
       );
     }, []);
     const insertFunction = useCallback(() => {
-      // Open the in-cell editor; the user types the function name after
-      // the '=' that EDIT_CELL starts with for a formula-first workflow.
-      // A fuller function picker can layer on later.
       setEditorStatus(EditorStatus.EDIT_FORMULA_BAR);
     }, []);
     const horizontalLeft = useCallback(() => {
@@ -303,331 +331,306 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
     }, []);
     return (
       <div className={styles['toolbar-wrapper']} data-testid="toolbar">
-        {/* History */}
-        <Button
-          type="toolbar"
-          disabled={!canUndo}
-          onClick={undo}
-          testId="toolbar-undo"
-          title={i18n.t('toolbar-undo')}
-          className={styles['icon-center']}
-        >
-          <Icon name="undo" />
-        </Button>
-        <Button
-          type="toolbar"
-          disabled={!canRedo}
-          onClick={redo}
-          testId="toolbar-redo"
-          title={i18n.t('toolbar-redo')}
-          className={styles['icon-center']}
-        >
-          <Icon name="redo" />
-        </Button>
-
-        <Separator />
-
-        {/* Clipboard + clear formatting */}
-        <Button
-          type="toolbar"
-          onClick={copy}
-          testId="toolbar-copy"
-          title={`${i18n.t('copy')} (Ctrl+C)`}
-          className={styles['icon-center']}
-        >
-          <Icon name="copy" />
-        </Button>
-        <Button
-          type="toolbar"
-          onClick={cut}
-          testId="toolbar-cut"
-          title={`${i18n.t('cut')} (Ctrl+X)`}
-          className={styles['icon-center']}
-        >
-          <Icon name="cut" />
-        </Button>
-        <Button
-          type="toolbar"
-          onClick={paste}
-          testId="toolbar-paste"
-          title={`${i18n.t('paste')} (Ctrl+V)`}
-          className={styles['icon-center']}
-        >
-          <Icon name="paste" />
-        </Button>
-        <Button
-          type="toolbar"
-          onClick={clearFormatting}
-          testId="toolbar-clear-format"
-          title={i18n.t('clear-format')}
-          className={styles['icon-center']}
-        >
-          <Icon name="clearFormat" />
-        </Button>
-
-        <Separator />
-
-        {/* Number format */}
-        <Button
-          type="toolbar"
-          onClick={applyCurrency}
-          testId="toolbar-currency"
-          title={i18n.t('format-as-currency')}
-        >
-          <span className={styles.glyph}>$</span>
-        </Button>
-        <Button
-          type="toolbar"
-          onClick={applyPercent}
-          testId="toolbar-percent"
-          title={i18n.t('format-as-percent')}
-        >
-          <span className={styles.glyph}>%</span>
-        </Button>
-        <Button
-          type="toolbar"
-          onClick={decreaseDecimal}
-          testId="toolbar-decimal-decrease"
-          title={i18n.t('decrease-decimal')}
-          className={styles['icon-center']}
-        >
-          <Icon name="decimalDecrease" />
-        </Button>
-        <Button
-          type="toolbar"
-          onClick={increaseDecimal}
-          testId="toolbar-decimal-increase"
-          title={i18n.t('increase-decimal')}
-          className={styles['icon-center']}
-        >
-          <Icon name="decimalIncrease" />
-        </Button>
-        <SelectList
-          data={numberFormatOptionList}
-          value={numberFormatValue}
-          onChange={handleNumberFormat}
-          className={styles['number-format']}
-          testId="toolbar-number-format"
-        >
-          <div
-            className={styles['number-format-value']}
-            data-testid="toolbar-number-format-value"
-          >
-            {numberFormatLabel}
-          </div>
-        </SelectList>
-
-        <Separator />
-
-        {/* Font */}
-        <Select
-          data={fontFamilyList}
-          value={cellStyle.fontFamily}
-          getItemStyle={getItemStyle}
-          onChange={handleFontFamilyChange}
-          testId="toolbar-font-family"
-          className={styles.fontFamily}
-        />
-        <Select
-          data={FONT_SIZE_LIST}
-          value={cellStyle.fontSize}
-          onChange={setFontSize}
-          testId="toolbar-font-size"
-          className={styles.fontSize}
-        />
-
-        <Separator />
-
-        {/* Character style */}
-        <Button
-          type="toolbar"
-          active={cellStyle.isBold}
-          onClick={toggleBold}
-          testId="toolbar-bold"
-          title={i18n.t('toolbar-bold')}
-        >
-          <span className={styles.bold}>B</span>
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.isItalic}
-          onClick={toggleItalic}
-          testId="toolbar-italic"
-          title={i18n.t('toolbar-italic')}
-        >
-          <span className={styles.italic}>I</span>
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.isStrike}
-          onClick={toggleStrike}
-          testId="toolbar-strike"
-          title={i18n.t('toolbar-strike')}
-          className={styles['icon-center']}
-        >
-          <Icon name="strikethrough" />
-        </Button>
-        <Select
-          data={underlineOptionList}
-          value={cellStyle.underline}
-          title={i18n.t('toolbar-underline')}
-          onChange={setUnderline}
-          testId="toolbar-underline"
-        />
-
-        <Separator />
-
-        {/* Color + borders */}
-        <ColorPicker
-          key="font-color"
-          color={cellStyle.fontColor}
-          onChange={setFontColor}
-          testId="toolbar-font-color"
-        >
+        <Section label={i18n.t('section-history')}>
           <Button
             type="toolbar"
-            style={fontStyle}
+            disabled={!canUndo}
+            onClick={undo}
+            testId="toolbar-undo"
+            title={i18n.t('toolbar-undo')}
+          >
+            <MdUndo {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            disabled={!canRedo}
+            onClick={redo}
+            testId="toolbar-redo"
+            title={i18n.t('toolbar-redo')}
+          >
+            <MdRedo {...iconProps} />
+          </Button>
+        </Section>
+
+        <Section label={i18n.t('section-clipboard')}>
+          <Button
+            type="toolbar"
+            onClick={copy}
+            testId="toolbar-copy"
+            title={`${i18n.t('copy')} (Ctrl+C)`}
+          >
+            <MdContentCopy {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            onClick={cut}
+            testId="toolbar-cut"
+            title={`${i18n.t('cut')} (Ctrl+X)`}
+          >
+            <MdContentCut {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            onClick={paste}
+            testId="toolbar-paste"
+            title={`${i18n.t('paste')} (Ctrl+V)`}
+          >
+            <MdContentPaste {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            onClick={clearFormatting}
+            testId="toolbar-clear-format"
+            title={i18n.t('clear-format')}
+          >
+            <MdFormatClear {...iconProps} />
+          </Button>
+        </Section>
+
+        <Section label={i18n.t('section-number')}>
+          <Button
+            type="toolbar"
+            onClick={applyCurrency}
+            testId="toolbar-currency"
+            title={i18n.t('format-as-currency')}
+          >
+            <MdAttachMoney {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            onClick={applyPercent}
+            testId="toolbar-percent"
+            title={i18n.t('format-as-percent')}
+          >
+            <MdPercent {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            onClick={decreaseDecimal}
+            testId="toolbar-decimal-decrease"
+            title={i18n.t('decrease-decimal')}
+          >
+            <span className={styles.glyph}>.0&larr;</span>
+          </Button>
+          <Button
+            type="toolbar"
+            onClick={increaseDecimal}
+            testId="toolbar-decimal-increase"
+            title={i18n.t('increase-decimal')}
+          >
+            <span className={styles.glyph}>.00&rarr;</span>
+          </Button>
+          <SelectList
+            data={numberFormatOptionList}
+            value={numberFormatValue}
+            onChange={handleNumberFormat}
+            className={styles['number-format']}
+            testId="toolbar-number-format"
+          >
+            <div
+              className={styles['number-format-value']}
+              data-testid="toolbar-number-format-value"
+              title={numberFormatLabel}
+            >
+              {numberFormatLabel}
+            </div>
+          </SelectList>
+        </Section>
+
+        <Section label={i18n.t('section-font')}>
+          <Select
+            data={fontFamilyList}
+            value={cellStyle.fontFamily}
+            getItemStyle={getItemStyle}
+            onChange={handleFontFamilyChange}
+            testId="toolbar-font-family"
+            className={styles.fontFamily}
+          />
+          <Select
+            data={FONT_SIZE_LIST}
+            value={cellStyle.fontSize}
+            onChange={setFontSize}
+            testId="toolbar-font-size"
+            className={styles.fontSize}
+          />
+        </Section>
+
+        <Section label={i18n.t('section-style')}>
+          <Button
+            type="toolbar"
+            active={cellStyle.isBold}
+            onClick={toggleBold}
+            testId="toolbar-bold"
+            title={i18n.t('toolbar-bold')}
+          >
+            <MdFormatBold {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.isItalic}
+            onClick={toggleItalic}
+            testId="toolbar-italic"
+            title={i18n.t('toolbar-italic')}
+          >
+            <MdFormatItalic {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.isStrike}
+            onClick={toggleStrike}
+            testId="toolbar-strike"
+            title={i18n.t('toolbar-strike')}
+          >
+            <MdStrikethroughS {...iconProps} />
+          </Button>
+          <Select
+            data={underlineOptionList}
+            value={cellStyle.underline}
+            title={i18n.t('toolbar-underline')}
+            onChange={setUnderline}
+            testId="toolbar-underline"
+          />
+        </Section>
+
+        <Section label={i18n.t('section-format')}>
+          <ColorPicker
+            key="font-color"
+            color={cellStyle.fontColor}
+            onChange={setFontColor}
             testId="toolbar-font-color"
-            className={styles['icon-center']}
-            title={i18n.t('toolbar-text-color')}
           >
-            <Icon name="fontColor" />
-          </Button>
-        </ColorPicker>
-        <ColorPicker
-          key="fill-color"
-          color={cellStyle.fillColor}
-          onChange={setFillColor}
-          testId="toolbar-fill-color"
-        >
-          <Button
-            type="toolbar"
-            style={fillStyle}
+            <Button
+              type="toolbar"
+              style={fontStyle}
+              testId="toolbar-font-color"
+              title={i18n.t('toolbar-text-color')}
+            >
+              <MdFormatColorText {...iconProps} />
+            </Button>
+          </ColorPicker>
+          <ColorPicker
+            key="fill-color"
+            color={cellStyle.fillColor}
+            onChange={setFillColor}
             testId="toolbar-fill-color"
-            className={styles['icon-center']}
-            title={i18n.t('toolbar-fill-color')}
           >
-            <FillColorIcon />
-          </Button>
-        </ColorPicker>
-        <BorderToolBar />
+            <Button
+              type="toolbar"
+              style={fillStyle}
+              testId="toolbar-fill-color"
+              title={i18n.t('toolbar-fill-color')}
+            >
+              <MdFormatColorFill {...iconProps} />
+            </Button>
+          </ColorPicker>
+          <BorderToolBar />
+        </Section>
 
-        <Separator />
-
-        {/* Alignment */}
-        <Button
-          type="toolbar"
-          active={cellStyle.horizontalAlign === EHorizontalAlign.LEFT}
-          onClick={horizontalLeft}
-          testId="toolbar-horizontal-left"
-          className={styles['icon-center']}
-          title={i18n.t('toolbar-align-left')}
-        >
-          <Icon name="horizontalLeft" />
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.horizontalAlign === EHorizontalAlign.CENTER}
-          onClick={horizontalCenter}
-          testId="toolbar-horizontal-center"
-          className={styles['icon-center']}
-          title={i18n.t('toolbar-align-center')}
-        >
-          <Icon name="horizontalCenter" />
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.horizontalAlign === EHorizontalAlign.RIGHT}
-          onClick={horizontalRight}
-          testId="toolbar-horizontal-right"
-          className={styles['icon-center']}
-          title={i18n.t('toolbar-align-right')}
-        >
-          <Icon name="horizontalRight" />
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.verticalAlign === EVerticalAlign.TOP}
-          onClick={verticalTop}
-          testId="toolbar-vertical-top"
-          className={styles['icon-center']}
-          title={i18n.t('toolbar-align-top')}
-        >
-          <Icon name="verticalTop" />
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.verticalAlign === EVerticalAlign.MIDDLE}
-          onClick={verticalMiddle}
-          testId="toolbar-vertical-middle"
-          className={styles['icon-center']}
-          title={i18n.t('toolbar-align-middle')}
-        >
-          <Icon name="verticalMiddle" />
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.verticalAlign === EVerticalAlign.BOTTOM}
-          onClick={verticalBottom}
-          testId="toolbar-vertical-bottom"
-          className={styles['icon-center']}
-          title={i18n.t('toolbar-align-bottom')}
-        >
-          <Icon name="verticalBottom" />
-        </Button>
-        <Button
-          type="toolbar"
-          active={cellStyle.isWrapText}
-          onClick={toggleWrapText}
-          testId="toolbar-wrap-text"
-          title={i18n.t('wrap-text')}
-          className={styles['icon-center']}
-        >
-          <Icon name="wrapText" />
-        </Button>
-        <SelectList
-          data={mergeOptionList}
-          value={cellStyle.mergeType}
-          onChange={handleMergeCell}
-          className={styles['merge-cell']}
-          testId="toolbar-merge-cell-select"
-        >
+        <Section label={i18n.t('section-align')}>
           <Button
             type="toolbar"
-            active={cellStyle.isMergeCell}
-            onClick={toggleMergeCell}
-            testId="toolbar-merge-cell"
-            className={styles['icon-center']}
-            title={i18n.t('merge-and-center')}
+            active={cellStyle.horizontalAlign === EHorizontalAlign.LEFT}
+            onClick={horizontalLeft}
+            testId="toolbar-horizontal-left"
+            title={i18n.t('toolbar-align-left')}
           >
-            <Icon name="mergeCells" />
+            <MdFormatAlignLeft {...iconProps} />
           </Button>
-        </SelectList>
+          <Button
+            type="toolbar"
+            active={cellStyle.horizontalAlign === EHorizontalAlign.CENTER}
+            onClick={horizontalCenter}
+            testId="toolbar-horizontal-center"
+            title={i18n.t('toolbar-align-center')}
+          >
+            <MdFormatAlignCenter {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.horizontalAlign === EHorizontalAlign.RIGHT}
+            onClick={horizontalRight}
+            testId="toolbar-horizontal-right"
+            title={i18n.t('toolbar-align-right')}
+          >
+            <MdFormatAlignRight {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.verticalAlign === EVerticalAlign.TOP}
+            onClick={verticalTop}
+            testId="toolbar-vertical-top"
+            title={i18n.t('toolbar-align-top')}
+          >
+            <MdVerticalAlignTop {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.verticalAlign === EVerticalAlign.MIDDLE}
+            onClick={verticalMiddle}
+            testId="toolbar-vertical-middle"
+            title={i18n.t('toolbar-align-middle')}
+          >
+            <MdVerticalAlignCenter {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.verticalAlign === EVerticalAlign.BOTTOM}
+            onClick={verticalBottom}
+            testId="toolbar-vertical-bottom"
+            title={i18n.t('toolbar-align-bottom')}
+          >
+            <MdVerticalAlignBottom {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={cellStyle.isWrapText}
+            onClick={toggleWrapText}
+            testId="toolbar-wrap-text"
+            title={i18n.t('wrap-text')}
+          >
+            <MdWrapText {...iconProps} />
+          </Button>
+          <SelectList
+            data={mergeOptionList}
+            value={cellStyle.mergeType}
+            onChange={handleMergeCell}
+            className={styles['merge-cell']}
+            testId="toolbar-merge-cell-select"
+          >
+            <Button
+              type="toolbar"
+              active={cellStyle.isMergeCell}
+              onClick={toggleMergeCell}
+              testId="toolbar-merge-cell"
+              title={i18n.t('merge-and-center')}
+            >
+              <MdCallMerge {...iconProps} />
+            </Button>
+          </SelectList>
+        </Section>
 
-        <Separator />
-
-        {/* Data + insert */}
-        <Button
-          type="toolbar"
-          onClick={insertFunction}
-          testId="toolbar-fx"
-          title={i18n.t('insert-function')}
-        >
-          <span className={styles.fx}>fx</span>
-        </Button>
-        <Button
-          type="toolbar"
-          active={isFilter}
-          onClick={handleFilter}
-          testId="toolbar-filter"
-          title={i18n.t('filter')}
-          className={styles['icon-center']}
-        >
-          <Icon name="filter" />
-        </Button>
-        <InsertFloatingPicture />
-        <InsertChart />
-        {children}
+        <Section label={i18n.t('section-insert')}>
+          <Button
+            type="toolbar"
+            onClick={insertFunction}
+            testId="toolbar-fx"
+            title={i18n.t('insert-function')}
+          >
+            <MdFunctions {...iconProps} />
+          </Button>
+          <Button
+            type="toolbar"
+            active={isFilter}
+            onClick={handleFilter}
+            testId="toolbar-filter"
+            title={i18n.t('filter')}
+          >
+            <MdFilterAlt {...iconProps} />
+          </Button>
+          <InsertFloatingPicture />
+          <InsertChart />
+          {children}
+        </Section>
       </div>
     );
   });

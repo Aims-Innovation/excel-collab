@@ -1,6 +1,6 @@
 {
   "name": "excel-collab",
-  "version": "0.1.13-fork.14",
+  "version": "0.1.13-fork.15",
   "description": "Online Collaboration Excel",
   "author": "Steve Xu <stevexugc@gmail.com>",
   "bugs": "https://github.com/nusr/excel/issues",
@@ -32,6 +32,7 @@
     "comlink": "^4.4.2",
     "jszip": "^3.10.1",
     "numfmt": "^3.2.3",
+    "react-icons": "^5.6.0",
     "uuid": "^13.0.0",
     "y-protocols": "^1.0.7",
     "zustand": "^5.0.9"
