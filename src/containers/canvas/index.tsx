@@ -7,7 +7,7 @@ import React, {
   useCallback,
 } from 'react';
 import type { IController, EventData, ModalValue } from '../../types';
-import { getHitInfo, DEFAULT_POSITION } from '../../util';
+import { getHitInfo, DEFAULT_POSITION, CELL_HEIGHT, CELL_WIDTH } from '../../util';
 import styles from './index.module.css';
 import { useCoreStore, useExcel } from '../../containers/store';
 import { ScrollBar } from './ScrollBar';
@@ -18,6 +18,8 @@ import FloatElementContainer from '../FloatElement';
 import handlerList from './event';
 import Modal from './modal';
 import { Collaboration } from './Collaboration';
+import { getResizeHit, type ResizeHit } from '../../canvas/resize';
+import { MainCanvas } from '../../canvas';
 
 function getEventData(
   event: React.PointerEvent<HTMLCanvasElement>,
@@ -39,6 +41,14 @@ function getEventData(
   return result;
 }
 
+type ResizeDrag = {
+  hit: ResizeHit;
+  startPointer: number; // clientX (col) or clientY (row)
+  startSize: number;
+};
+
+const MIN_RESIZE_SIZE = 4;
+
 export const CanvasContainer = memo(() => {
   const { controller } = useExcel();
   const [modalState, setModalState] = useState<ModalValue | null>(null);
@@ -48,8 +58,10 @@ export const CanvasContainer = memo(() => {
     top: DEFAULT_POSITION,
     left: DEFAULT_POSITION,
   });
+  const [cursor, setCursor] = useState<string>('');
 
   const ref = useRef<HTMLCanvasElement>(null);
+  const resizeDragRef = useRef<ResizeDrag | null>(null);
   useEffect(() => {
     if (!ref.current) {
       return;
@@ -74,10 +86,34 @@ export const CanvasContainer = memo(() => {
   };
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
-      /* jscpd:ignore-start */
-      if (event.buttons <= 0) {
+      // Resize-drag in progress: update size live and skip other handlers.
+      const drag = resizeDragRef.current;
+      if (drag) {
+        const delta =
+          drag.hit.axis === 'col'
+            ? event.clientX - drag.startPointer
+            : event.clientY - drag.startPointer;
+        const next = Math.max(MIN_RESIZE_SIZE, drag.startSize + delta);
+        if (drag.hit.axis === 'col') {
+          controller.setColWidth(drag.hit.index, next);
+        } else {
+          controller.setRowHeight(drag.hit.index, next);
+        }
         return;
       }
+      // Hover cursor feedback when not pressing a button.
+      if (event.buttons <= 0) {
+        const { x, y } = eventCoords(event, controller);
+        const hit = getResizeHit(controller, x, y);
+        const nextCursor = hit
+          ? hit.axis === 'col'
+            ? 'col-resize'
+            : 'row-resize'
+          : '';
+        setCursor((prev) => (prev === nextCursor ? prev : nextCursor));
+        return;
+      }
+      /* jscpd:ignore-start */
       const data = getEventData(event, controller);
       for (const handler of handlerList) {
         const r = handler.pointerMove(data, event);
@@ -97,6 +133,23 @@ export const CanvasContainer = memo(() => {
       if (event.buttons <= 0) {
         return;
       }
+      // Resize hit-test takes precedence over selection/filter handlers.
+      const { x, y } = eventCoords(event, controller);
+      const hit = getResizeHit(controller, x, y);
+      if (hit) {
+        const startSize =
+          hit.axis === 'col'
+            ? controller.getColWidth(hit.index)
+            : controller.getRowHeight(hit.index);
+        resizeDragRef.current = {
+          hit,
+          startPointer: hit.axis === 'col' ? event.clientX : event.clientY,
+          startSize,
+        };
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+        return;
+      }
       setModalState(null);
       const data = getEventData(event, controller);
       for (const handler of handlerList) {
@@ -107,6 +160,33 @@ export const CanvasContainer = memo(() => {
           }
           break;
         }
+      }
+    },
+    [],
+  );
+  const handlePointerUp = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      if (resizeDragRef.current) {
+        resizeDragRef.current = null;
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+      }
+    },
+    [],
+  );
+  const handleDoubleClick = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      const { x, y } = eventCoords(event, controller);
+      const hit = getResizeHit(controller, x, y);
+      if (!hit) return;
+      event.preventDefault();
+      const mc = MainCanvas.instance;
+      if (!mc) return;
+      if (hit.axis === 'col') {
+        const measured = mc.getMeasuredColWidth(hit.index);
+        controller.setColWidth(hit.index, measured ?? CELL_WIDTH);
+      } else {
+        const measured = mc.getMeasuredRowHeight(hit.index);
+        controller.setRowHeight(hit.index, measured ?? CELL_HEIGHT);
       }
     },
     [],
@@ -122,7 +202,11 @@ export const CanvasContainer = memo(() => {
           onContextMenu={handleContextMenu}
           onPointerMove={handlePointerMove}
           onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onDoubleClick={handleDoubleClick}
           ref={ref}
+          style={cursor ? { cursor } : undefined}
           data-testid="canvas-main"
         />
         <ScrollBar />
@@ -142,6 +226,17 @@ export const CanvasContainer = memo(() => {
     </Fragment>
   );
 });
+
+function eventCoords(
+  event:
+    | React.PointerEvent<HTMLCanvasElement>
+    | React.MouseEvent<HTMLCanvasElement>,
+  controller: IController,
+) {
+  const rect = controller.getCanvasSize();
+  const { clientX = 0, clientY = 0 } = event;
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
 CanvasContainer.displayName = 'CanvasContainer';
 
 export default CanvasContainer;

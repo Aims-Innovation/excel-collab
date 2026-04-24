@@ -15,6 +15,14 @@ export class MainCanvas implements MainView {
   static instance: MainCanvas;
   private readonly controller: IController;
   private readonly canvas: HTMLCanvasElement;
+  /**
+   * Last measurements reported by the render worker. Used by the
+   * double-click auto-fit handler: the worker measures actual content
+   * width/height per rendered cell and returns rows/cols whose content
+   * exceeds the default size. For auto-fit we read these back.
+   */
+  private lastMeasuredRowMap: Record<string, number> = {};
+  private lastMeasuredColMap: Record<string, number> = {};
   constructor(controller: IController, canvas: HTMLCanvasElement) {
     this.controller = controller;
     this.canvas = canvas;
@@ -28,8 +36,16 @@ export class MainCanvas implements MainView {
       worker.init(transfer(data, [data.canvas]));
     }
   }
+  getMeasuredRowHeight(row: number): number | undefined {
+    return this.lastMeasuredRowMap[row];
+  }
+  getMeasuredColWidth(col: number): number | undefined {
+    return this.lastMeasuredColMap[col];
+  }
   private readonly renderCallback = (result: ResponseRender) => {
     const { rowMap, colMap } = result;
+    this.lastMeasuredRowMap = { ...this.lastMeasuredRowMap, ...rowMap };
+    this.lastMeasuredColMap = { ...this.lastMeasuredColMap, ...colMap };
     const rowKeys = Object.keys(rowMap);
     const colKeys = Object.keys(colMap);
     if (colKeys.length === 0 && rowKeys.length === 0) {
