@@ -289,9 +289,158 @@ function checkActiveElement(controller: IController) {
   }
   setActiveCellValue(controller);
 }
+
+type JumpDirection = 'up' | 'down' | 'left' | 'right';
+
+/**
+ * Excel-style Ctrl+Arrow jump-to-edge: find the next "boundary" in the
+ * given direction starting from the active cell. If the active cell is
+ * populated, walk while neighbours are also populated and stop at the
+ * last populated cell. If the active cell is empty, walk while
+ * neighbours are also empty and stop at the first populated cell. In
+ * either case, clamp to sheet bounds.
+ */
+function jumpToEdge(
+  controller: IController,
+  direction: JumpDirection,
+): { row: number; col: number } | null {
+  const sheetId = controller.getCurrentSheetId();
+  const sheetInfo = controller.getSheetInfo(sheetId);
+  if (!sheetInfo) return null;
+  const active = controller.getActiveRange().range;
+  let row = active.row;
+  let col = active.col;
+
+  const dRow = direction === 'down' ? 1 : direction === 'up' ? -1 : 0;
+  const dCol = direction === 'right' ? 1 : direction === 'left' ? -1 : 0;
+  const maxRow = sheetInfo.rowCount - 1;
+  const maxCol = sheetInfo.colCount - 1;
+
+  const inBounds = (r: number, c: number) =>
+    r >= 0 && r <= maxRow && c >= 0 && c <= maxCol;
+  const hasData = (r: number, c: number) => {
+    const cell = controller.getCell({
+      row: r,
+      col: c,
+      rowCount: 1,
+      colCount: 1,
+      sheetId,
+    });
+    const v = cell?.value;
+    return v !== undefined && v !== null && v !== '';
+  };
+
+  const startHasData = hasData(row, col);
+  let nr = row + dRow;
+  let nc = col + dCol;
+
+  if (startHasData) {
+    // Walk while adjacent cell still has data; stop at last populated.
+    while (inBounds(nr, nc) && hasData(nr, nc)) {
+      row = nr;
+      col = nc;
+      nr += dRow;
+      nc += dCol;
+    }
+    // If the very next neighbour was empty AND we didn't move, jump past
+    // the empty gap to the next populated cell (Excel behaviour).
+    if (row === active.row && col === active.col && inBounds(nr, nc)) {
+      while (inBounds(nr, nc) && !hasData(nr, nc)) {
+        nr += dRow;
+        nc += dCol;
+      }
+      if (inBounds(nr, nc)) {
+        row = nr;
+        col = nc;
+      } else {
+        // Ran off the sheet while scanning the gap; clamp to the edge.
+        row = Math.max(0, Math.min(maxRow, nr - dRow));
+        col = Math.max(0, Math.min(maxCol, nc - dCol));
+      }
+    }
+  } else {
+    // Active is empty: walk to first populated cell in direction.
+    while (inBounds(nr, nc) && !hasData(nr, nc)) {
+      nr += dRow;
+      nc += dCol;
+    }
+    if (inBounds(nr, nc)) {
+      row = nr;
+      col = nc;
+    } else {
+      // No populated cell; jump to sheet edge.
+      row = Math.max(0, Math.min(maxRow, nr - dRow));
+      col = Math.max(0, Math.min(maxCol, nc - dCol));
+    }
+  }
+
+  return { row, col };
+}
+
+function extendActiveRangeTo(
+  controller: IController,
+  targetRow: number,
+  targetCol: number,
+) {
+  const active = controller.getActiveRange().range;
+  // Anchor is the existing top-left corner of the current selection.
+  const anchorRow = active.row;
+  const anchorCol = active.col;
+  const minRow = Math.min(anchorRow, targetRow);
+  const maxRow = Math.max(anchorRow, targetRow);
+  const minCol = Math.min(anchorCol, targetCol);
+  const maxCol = Math.max(anchorCol, targetCol);
+  controller.setActiveRange({
+    row: minRow,
+    col: minCol,
+    rowCount: maxRow - minRow + 1,
+    colCount: maxCol - minCol + 1,
+    sheetId: active.sheetId || controller.getCurrentSheetId(),
+  });
+}
+
 const modifierKey: KeyboardEventItem['modifierKey'] = [
   isMac() ? 'meta' : 'ctrl',
 ];
+const modifierKeyShift: KeyboardEventItem['modifierKey'] = [
+  isMac() ? 'meta' : 'ctrl',
+  'shift',
+];
+
+function makeJumpHandler(direction: JumpDirection) {
+  return (controller: IController) => {
+    if (checkFocus()) return;
+    controller.transaction(() => {
+      checkActiveElement(controller);
+      const target = jumpToEdge(controller, direction);
+      if (!target) return true;
+      controller.setActiveRange({
+        row: target.row,
+        col: target.col,
+        rowCount: 1,
+        colCount: 1,
+        sheetId: controller.getCurrentSheetId(),
+      });
+      recalculateScroll(controller);
+      return true;
+    });
+  };
+}
+
+function makeExtendHandler(direction: JumpDirection) {
+  return (controller: IController) => {
+    if (checkFocus()) return;
+    controller.transaction(() => {
+      checkActiveElement(controller);
+      const target = jumpToEdge(controller, direction);
+      if (!target) return true;
+      extendActiveRangeTo(controller, target.row, target.col);
+      recalculateScroll(controller);
+      return true;
+    });
+  };
+}
+
 /* jscpd:ignore-start */
 export const keyboardEventList: KeyboardEventItem[] = [
   {
@@ -305,64 +454,58 @@ export const keyboardEventList: KeyboardEventItem[] = [
     handler: handleTabClick,
   },
   {
-    key: 'ArrowDown',
+    key: 'a',
     modifierKey,
     handler: (controller) => {
-      if (checkFocus()) {
-        return;
-      }
-      controller.transaction(() => {
-        checkActiveElement(controller);
-        const viewSize = controller.getSheetViewSize();
-        scrollBar(controller, 0, viewSize.height);
-        return true;
+      if (checkFocus()) return;
+      controller.setActiveRange({
+        row: 0,
+        col: 0,
+        rowCount: 0,
+        colCount: 0,
+        sheetId: controller.getCurrentSheetId(),
       });
     },
+  },
+  {
+    key: 'ArrowDown',
+    modifierKey,
+    handler: makeJumpHandler('down'),
   },
   {
     key: 'ArrowUp',
     modifierKey,
-    handler: (controller) => {
-      if (checkFocus()) {
-        return;
-      }
-      controller.transaction(() => {
-        checkActiveElement(controller);
-        const viewSize = controller.getSheetViewSize();
-        scrollBar(controller, 0, -viewSize.height);
-        return true;
-      });
-    },
+    handler: makeJumpHandler('up'),
   },
   {
     key: 'ArrowRight',
     modifierKey,
-    handler: (controller) => {
-      if (checkFocus()) {
-        return;
-      }
-      controller.transaction(() => {
-        checkActiveElement(controller);
-        const viewSize = controller.getSheetViewSize();
-        scrollBar(controller, viewSize.width, 0);
-        return true;
-      });
-    },
+    handler: makeJumpHandler('right'),
   },
   {
     key: 'ArrowLeft',
     modifierKey,
-    handler: (controller) => {
-      if (checkFocus()) {
-        return;
-      }
-      controller.transaction(() => {
-        checkActiveElement(controller);
-        const viewSize = controller.getSheetViewSize();
-        scrollBar(controller, -viewSize.width, 0);
-        return true;
-      });
-    },
+    handler: makeJumpHandler('left'),
+  },
+  {
+    key: 'ArrowDown',
+    modifierKey: modifierKeyShift,
+    handler: makeExtendHandler('down'),
+  },
+  {
+    key: 'ArrowUp',
+    modifierKey: modifierKeyShift,
+    handler: makeExtendHandler('up'),
+  },
+  {
+    key: 'ArrowRight',
+    modifierKey: modifierKeyShift,
+    handler: makeExtendHandler('right'),
+  },
+  {
+    key: 'ArrowLeft',
+    modifierKey: modifierKeyShift,
+    handler: makeExtendHandler('left'),
   },
   {
     key: 'ArrowDown',

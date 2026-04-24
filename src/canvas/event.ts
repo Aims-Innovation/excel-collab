@@ -34,12 +34,16 @@ export function registerGlobalEvent(
       return;
     }
     reactLog('keydown:', event);
+    // Sort entries for the pressed key by modifier-count descending so
+    // longer combos (e.g. ['ctrl','shift']) win over shorter ones (['ctrl']).
+    // `.every` (not `.some`) is required: a handler registered for
+    // ['ctrl','shift'] must NOT fire on plain Ctrl+Key.
     const list = keyboardEventList.filter((v) => v.key === event.key);
     list.sort((a, b) => b.modifierKey.length - a.modifierKey.length);
     let temp: KeyboardEventItem | undefined = undefined;
     for (const item of list) {
       if (item.modifierKey.length > 0) {
-        if (item.modifierKey.some((v) => event[`${v}Key`])) {
+        if (item.modifierKey.every((v) => event[`${v}Key`])) {
           temp = item;
           break;
         }
