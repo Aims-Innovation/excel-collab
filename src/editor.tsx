@@ -16,6 +16,7 @@ import Worker from './worker?worker&inline';
 import { Doc } from 'yjs';
 import i18n from './i18n';
 import { RTL_LANGUAGE_LIST } from './util/constant';
+import { reactLog } from './util/debug';
 
 export type DocConfig = ConstructorParameters<typeof Doc>[0];
 
@@ -43,6 +44,7 @@ export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
       return;
     }
     didBootstrapRef.current = true;
+    reactLog('Excel bootstrap: creating Worker + controller');
     i18n.init();
 
     const controller = initController({
@@ -54,6 +56,7 @@ export const Excel: React.FunctionComponent<ExcelProps> = memo((props) => {
   }, []);
 
   useEffect(() => {
+    reactLog('language changed', language);
     const isRTL = RTL_LANGUAGE_LIST.includes(language as any);
     document.documentElement.setAttribute(
       'data-layout-direction',

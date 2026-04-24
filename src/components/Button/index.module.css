@@ -34,10 +34,12 @@
 .buttonWrapper.toolbar {
   border: none;
   border-radius: 4px;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
   background-color: transparent;
+  font-size: 18px;
+  line-height: 1;
   transition: background-color 120ms ease;
 }
 .buttonWrapper.toolbar:hover:not(.disabled) {

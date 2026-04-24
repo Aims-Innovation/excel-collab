@@ -10,6 +10,7 @@ import { UserItem } from '../types';
 import { modelToChangeSet } from '../util';
 import { Loading } from '../components';
 import i18n from '../i18n';
+import { collaborationLog, perfMeasure } from '../util/debug';
 
 function useCollaboration() {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +19,7 @@ function useCollaboration() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
+      collaborationLog('useCollaboration init start', { hasProvider: !!provider });
       if (!provider) {
         if (controller.getSheetList().length === 0) {
           controller.addFirstSheet();
@@ -27,16 +29,23 @@ function useCollaboration() {
       }
       setIsLoading(true);
       const doc = controller.getHooks().doc;
-      const file = await provider?.getDocument?.(doc.guid);
+      const file = await perfMeasure('provider.getDocument', () =>
+        provider.getDocument?.(doc.guid),
+      );
       if (cancelled) return;
       const content = file?.content ?? '';
       if (content) {
-        controller.fromJSON(JSON.parse(content));
+        await perfMeasure('controller.fromJSON', () =>
+          controller.fromJSON(JSON.parse(content)),
+        );
       }
       setFileInfo(file?.id ?? doc.guid, file?.name ?? '');
       if (controller.getSheetList().length === 0) {
         controller.addFirstSheet();
       }
+      collaborationLog('useCollaboration init done', {
+        sheetCount: controller.getSheetList().length,
+      });
       setIsLoading(false);
     }
     init();

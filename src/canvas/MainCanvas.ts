@@ -7,7 +7,7 @@ import type {
   RequestRender,
   IWindowSize,
 } from '../types';
-import { dpr } from '../util';
+import { dpr, renderLog, perfMeasure } from '../util';
 import { getTheme } from '../theme';
 import { transfer, proxy } from 'comlink';
 
@@ -44,8 +44,15 @@ export class MainCanvas implements MainView {
   }
   private readonly renderCallback = (result: ResponseRender) => {
     const { rowMap, colMap } = result;
-    this.lastMeasuredRowMap = { ...this.lastMeasuredRowMap, ...rowMap };
-    this.lastMeasuredColMap = { ...this.lastMeasuredColMap, ...colMap };
+    // Overwrite rather than accumulate. Previous revisions merged into
+    // a long-lived map that grew with every render, turning these two
+    // object spreads into O(all-measurements) per paint and leaking
+    // stale measurements forever. Auto-fit only reads measurements for
+    // the currently-visible column/row (you can't double-click a
+    // header that isn't in view), so the most-recent render's maps are
+    // the only ones we need.
+    this.lastMeasuredRowMap = rowMap;
+    this.lastMeasuredColMap = colMap;
     const rowKeys = Object.keys(rowMap);
     const colKeys = Object.keys(colMap);
     if (colKeys.length === 0 && rowKeys.length === 0) {
@@ -74,27 +81,32 @@ export class MainCanvas implements MainView {
     });
   };
   async render(data: EventType) {
+    return perfMeasure('MainCanvas.render', () => this.renderInner(data));
+  }
+  private async renderInner(data: EventType) {
     const { controller } = this;
     const currentId = controller.getCurrentSheetId();
     const sheetInfo = controller.getSheetInfo(currentId);
     if (!sheetInfo) {
       return;
     }
+    renderLog('dispatch', {
+      changeSet: Array.from(data.changeSet),
+      sheetId: currentId,
+    });
     const copyRange = controller.getCopyRange();
     const jsonData = controller.toJSON();
-    // Y.Map#toJSON recursively unwraps only AbstractType (Y-type) values;
-    // plain-object values stored into a Y.Map are returned raw, which can
-    // carry references back to the owning Y.Doc (whose EventEmitter holds
-    // non-cloneable listener functions). JSON-round-tripping the four
-    // fields sourced from Y.Map#toJSON strips any such residual reference
-    // before the payload crosses the worker boundary.
-    const plainSheetData = JSON.parse(JSON.stringify(jsonData.worksheets));
-    const plainCustomHeight = JSON.parse(JSON.stringify(jsonData.customHeight));
-    const plainCustomWidth = JSON.parse(JSON.stringify(jsonData.customWidth));
-    const plainAutoFilter =
-      jsonData.autoFilter[currentId] === undefined
-        ? undefined
-        : JSON.parse(JSON.stringify(jsonData.autoFilter[currentId]));
+    // NOTE: v0.1.13.4 added a defensive JSON.parse(JSON.stringify(...))
+    // around sheetData / customHeight / customWidth / autoFilter to
+    // strip any Y.Doc reference that leaked through Y.Map#toJSON's
+    // non-Y-value passthrough. That was pure overhead on every render
+    // (5-20 ms for non-trivial sheets) and doubled-cloned the payload
+    // since postMessage's structuredClone runs right after. The guard
+    // in controller/workerGuard.ts now rethrows DataCloneError with
+    // the non-cloneable key path, so leaks surface loudly without us
+    // paying the clone cost on every keystroke / cursor move / remote
+    // update. If a leak resurfaces, fix it at the model source, not
+    // here.
     const eventData: RequestRender = {
       changeSet: data.changeSet,
       theme: getTheme(),
@@ -105,10 +117,10 @@ export class MainCanvas implements MainView {
       range: controller.getActiveRange().range,
       copyRange,
       currentMergeCells: controller.getMergeCellList(currentId),
-      customHeight: plainCustomHeight,
-      customWidth: plainCustomWidth,
-      sheetData: plainSheetData,
-      autoFilter: plainAutoFilter,
+      customHeight: jsonData.customHeight,
+      customWidth: jsonData.customWidth,
+      sheetData: jsonData.worksheets,
+      autoFilter: jsonData.autoFilter[currentId],
     };
 
     return this.controller

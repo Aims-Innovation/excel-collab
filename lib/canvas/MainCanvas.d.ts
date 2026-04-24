@@ -16,5 +16,6 @@ export declare class MainCanvas implements MainView {
     getMeasuredColWidth(col: number): number | undefined;
     private readonly renderCallback;
     render(data: EventType): Promise<void>;
+    private renderInner;
     resize(): void;
 }
