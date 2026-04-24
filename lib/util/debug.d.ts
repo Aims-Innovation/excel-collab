@@ -1,4 +1,5 @@
 type NameSpaceType = 'react' | 'model' | 'test' | 'collaboration' | 'controller' | 'perf' | 'render' | 'input';
+export declare function isDebugEnabled(namespace: NameSpaceType): boolean;
 export declare class Debug {
     namespace: NameSpaceType;
     static readonly colorMap: Map<NameSpaceType, string>;

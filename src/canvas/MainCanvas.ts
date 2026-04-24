@@ -7,7 +7,7 @@ import type {
   RequestRender,
   IWindowSize,
 } from '../types';
-import { dpr, renderLog, perfMeasure } from '../util';
+import { dpr, renderLog, perfMeasure, isDebugEnabled } from '../util';
 import { getTheme } from '../theme';
 import { transfer, proxy } from 'comlink';
 
@@ -90,10 +90,12 @@ export class MainCanvas implements MainView {
     if (!sheetInfo) {
       return;
     }
-    renderLog('dispatch', {
-      changeSet: Array.from(data.changeSet),
-      sheetId: currentId,
-    });
+    if (isDebugEnabled('render')) {
+      renderLog('dispatch', {
+        changeSet: Array.from(data.changeSet),
+        sheetId: currentId,
+      });
+    }
     const copyRange = controller.getCopyRange();
     const jsonData = controller.toJSON();
     // NOTE: v0.1.13.4 added a defensive JSON.parse(JSON.stringify(...))

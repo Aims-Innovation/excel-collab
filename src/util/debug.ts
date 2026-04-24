@@ -38,6 +38,13 @@ function readDebugFlag(): Set<string> | 'all' | null {
   }
 }
 
+export function isDebugEnabled(namespace: NameSpaceType): boolean {
+  const flag = readDebugFlag();
+  if (!flag) return false;
+  if (flag === 'all') return true;
+  return flag.has(namespace);
+}
+
 export class Debug {
   namespace: NameSpaceType;
 
@@ -62,10 +69,7 @@ export class Debug {
     console.log(...result);
   };
   enable() {
-    const flag = readDebugFlag();
-    if (!flag) return false;
-    if (flag === 'all') return true;
-    return flag.has(this.namespace);
+    return isDebugEnabled(this.namespace);
   }
   setColor() {
     if (!Debug.colorMap.has(this.namespace)) {
@@ -92,8 +96,7 @@ export async function perfMeasure<T>(
   label: string,
   fn: () => T | Promise<T>,
 ): Promise<T> {
-  const log = new Debug('perf');
-  if (!log.enable()) return fn();
+  if (!isDebugEnabled('perf')) return fn();
   const start = performance.now();
   try {
     return await fn();
