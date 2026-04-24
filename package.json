@@ -1,6 +1,6 @@
 {
   "name": "excel-collab",
-  "version": "0.1.13-fork.4",
+  "version": "0.1.13-fork.5",
   "description": "Online Collaboration Excel",
   "author": "Steve Xu <stevexugc@gmail.com>",
   "bugs": "https://github.com/nusr/excel/issues",
@@ -34,7 +34,6 @@
     "numfmt": "^3.2.3",
     "uuid": "^13.0.0",
     "y-protocols": "^1.0.7",
-    "yjs": "^13.6.28",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
@@ -59,11 +58,18 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "yjs": "^13.6.30"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react-dom": ">=18.0.0",
+    "yjs": "^13.6.30"
+  },
+  "peerDependenciesMeta": {
+    "yjs": {
+      "optional": false
+    }
   },
   "keywords": [
     "react",

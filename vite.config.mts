@@ -21,15 +21,24 @@ export default defineConfig({
       // `react/jsx-runtime`, etc. — otherwise rollup bundles the whole
       // react-dom package and ships its "Incompatible React versions"
       // check compiled with hardcoded versions from the build machine.
+      //
+      // yjs is externalized so the consumer provides a single copy and
+      // we don't ship the ~200 KB library twice. All our yjs imports are
+      // bare 'yjs' (no subpaths in use; verified via `grep -r "from 'yjs/"`)
+      // — the id === 'yjs' match is sufficient but we still allow subpaths
+      // defensively for future-proofing.
       external: (id) =>
         id === 'react' ||
         id === 'react-dom' ||
         id.startsWith('react/') ||
-        id.startsWith('react-dom/'),
+        id.startsWith('react-dom/') ||
+        id === 'yjs' ||
+        id.startsWith('yjs/'),
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
+          yjs: 'Y',
         },
       },
     },
