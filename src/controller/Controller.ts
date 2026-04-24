@@ -798,13 +798,22 @@ export class Controller
     let html = '';
     let text = '';
     let custom: CustomClipboardData | null = null;
-    let files: FileList | null = null;
+    let files: File[] = [];
     if (!event) {
       const data = await paste();
       html = data[HTML_FORMAT];
       text = data[PLAIN_FORMAT];
       if (data[CUSTOM_FORMAT]) {
         custom = data[CUSTOM_FORMAT];
+      }
+      // Async clipboard path: image/png (if present) arrives as a Blob.
+      // Wrap it in a File so the image-paste branch below can treat the
+      // sync and async paths uniformly.
+      const imageBlob = data[IMAGE_FORMAT];
+      if (imageBlob && imageBlob.size > 0) {
+        files = [
+          new File([imageBlob], 'pasted-image.png', { type: 'image/png' }),
+        ];
       }
       if (custom && custom.type === 'cut') {
         copyOrCut(
@@ -831,10 +840,16 @@ export class Controller
         event.clipboardData?.setData(IMAGE_FORMAT, '');
       }
       if (event.clipboardData?.files) {
-        files = event.clipboardData?.files;
+        files = Array.from(event.clipboardData.files);
       }
     }
-    if (files) {
+    // Only treat the clipboard as an image-paste when there is nothing
+    // textual to paste. Excel and many other apps attach a bitmap
+    // preview alongside the HTML table: if we took the image branch
+    // eagerly, we'd insert the preview image instead of the cell data.
+    const htmlTrim = html.trim();
+    const textTrim = text.trim();
+    if (files.length > 0 && !htmlTrim && !textTrim && !custom) {
       const list: DrawingElement[] = [];
       for (const file of files) {
         if (file.size <= 0) {
@@ -886,17 +901,15 @@ export class Controller
       this.setActiveRange(activeCell);
       return;
     }
-    html = html.trim();
-    text = text.trim();
-    if (html) {
-      const result = this.parseHTML(html);
+    if (htmlTrim) {
+      const result = this.parseHTML(htmlTrim);
       if (result) {
         this.setActiveRange(result);
         return;
       }
     }
-    if (text) {
-      const result = this.parseText(text);
+    if (textTrim) {
+      const result = this.parseText(textTrim);
       if (result) {
         this.setActiveRange(result);
         return;
