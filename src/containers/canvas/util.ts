@@ -314,6 +314,26 @@ function computeCanvasSize(canvas: HTMLCanvasElement) {
   return result;
 }
 
+// MainCanvas instances keyed by the <canvas> DOM element they bind.
+// `transferControlToOffscreen()` throws on the second call per element,
+// so we MUST reuse the instance when React dev-mode StrictMode fires
+// effect cleanup-then-setup against the same canvas. WeakMap so
+// genuinely-unmounted canvases (and their instances) are collected.
+const canvasToMainCanvas = new WeakMap<HTMLCanvasElement, MainCanvas>();
+
+function getOrCreateMainCanvas(
+  controller: IController,
+  canvas: HTMLCanvasElement,
+): MainCanvas {
+  const existing = canvasToMainCanvas.get(canvas);
+  if (existing) {
+    return existing;
+  }
+  const instance = new MainCanvas(controller, canvas);
+  canvasToMainCanvas.set(canvas, instance);
+  return instance;
+}
+
 export function initCanvas(
   controller: IController,
   canvas: HTMLCanvasElement,
@@ -321,12 +341,10 @@ export function initCanvas(
   useCoreStore.getState().setFontFamilies(initFontFamilyList());
   useUserInfo.getState().setClientId(controller.getHooks().doc.clientID);
 
-  // Fresh instance per initCanvas call. transferControlToOffscreen is
-  // one-shot per canvas element; each mount's canvas needs its own.
-  // Returning the instance lets the caller hold a ref for features
-  // that need to read from it (e.g. double-click auto-fit reading the
-  // last measured colMap/rowMap).
-  const mainCanvas = new MainCanvas(controller, canvas);
+  // Reuse the instance if this canvas has already been bound (StrictMode
+  // cleanup+resetup against the same DOM node). Genuine remount gives a
+  // fresh canvas element, gets a fresh instance.
+  const mainCanvas = getOrCreateMainCanvas(controller, canvas);
   const renderCanvas = (changeSet: Set<ChangeEventType>) => {
     const size = computeCanvasSize(canvas);
     if (size) {

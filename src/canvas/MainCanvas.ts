@@ -177,6 +177,16 @@ export class MainCanvas implements MainView {
   resize() {
     const { canvas } = this;
     const { width, height } = this.controller.getCanvasSize();
+    // computeCanvasSize can report negative dimensions when the
+    // canvas's parent element hasn't laid out yet (width =
+    // clientWidth - scrollbarSize, and clientWidth is 0 during the
+    // initial mount of a modal / hidden-then-shown container). A
+    // subsequent resize with a positive size will catch up. Skip the
+    // intermediate posting so the worker doesn't throw
+    // "OffscreenCanvas.width: value outside unsigned-long range".
+    if (width <= 0 || height <= 0) {
+      return;
+    }
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     const eventData: IWindowSize = {
