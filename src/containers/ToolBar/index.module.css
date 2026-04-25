@@ -1,31 +1,43 @@
 .toolbar-wrapper {
-  padding: 6px 10px 4px;
+  padding: 4px 8px 2px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--borderColor);
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0;
-  flex-wrap: wrap;
-  row-gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   background-color: var(--white);
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   padding: 0 6px;
   border-right: 1px solid var(--borderColor);
-  min-height: 52px;
+  flex-shrink: 0;
 }
 .section:last-of-type {
   border-right: none;
 }
+.section-body {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 72px;
+}
+.section-rows {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
 .section-row {
   display: flex;
   align-items: center;
-  gap: 2px;
-  min-height: 36px;
+  gap: 1px;
+  min-height: 30px;
 }
 .section-label {
   font-size: 10px;
@@ -34,47 +46,105 @@
   margin-top: 2px;
   letter-spacing: 0.2px;
   user-select: none;
-  text-transform: uppercase;
   font-weight: 500;
+  text-align: center;
+  padding-bottom: 2px;
+}
+
+.toolbar-wrapper .small-button {
+  min-width: 26px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 3px;
+}
+
+.toolbar-wrapper .big-button {
+  min-width: 56px;
+  height: 70px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.big-button-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
+}
+.big-button-inner svg {
+  width: 28px;
+  height: 28px;
+}
+.big-button-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--contentColor);
+}
+
+.clipboard-split {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+.stack-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.mini-divider {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  background-color: var(--borderColor);
+  margin: 0 3px;
+  flex-shrink: 0;
 }
 
 .toolbar-wrapper .merge-cell {
   width: auto;
-  height: 36px;
+  height: 26px;
 }
-.toolbar-wrapper .border {
+.toolbar-wrapper .underline-select {
   width: auto;
-  height: 36px;
-}
-.toolbar-wrapper .merge-cell-button {
-  border-radius: 4px;
-  padding: 0 6px;
+  height: 26px;
+  min-width: 36px;
 }
 .toolbar-wrapper .number-format {
-  height: unset;
+  height: 26px;
   width: 150px;
   min-width: 150px;
 }
 .number-format-value {
   text-align: left;
-  padding: 0 8px;
-  font-size: 13px;
+  padding: 0 6px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 24px;
 }
 .fontFamily {
-  max-width: 180px;
-  min-width: 140px;
+  max-width: 140px;
+  min-width: 110px;
+  height: 26px;
 }
 .toolbar-wrapper .fontSize {
-  width: 68px;
-  min-width: 68px;
+  width: 56px;
+  min-width: 56px;
+  height: 26px;
 }
 .glyph {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: -0.5px;
+  white-space: nowrap;
 }
 .fx {
   font-style: italic;
@@ -82,13 +152,26 @@
   font-weight: 500;
   font-size: 15px;
 }
-.icon-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .icon-svg {
   width: 20px;
   height: 20px;
   display: block;
+}
+.icon-svg-sm {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.section-row > div[class*="container"] {
+  width: 96px !important;
+  height: 26px !important;
+  font-size: 11px;
+}
+.section-row > div[class*="container"] button {
+  height: 24px;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

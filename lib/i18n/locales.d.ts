@@ -14,6 +14,8 @@ declare const defaultLanguageTranslation: {
     'format-as-percent': string;
     'decrease-decimal': string;
     'increase-decimal': string;
+    'increase-font-size': string;
+    'decrease-font-size': string;
     'insert-function': string;
     'toolbar-undo': string;
     'toolbar-redo': string;

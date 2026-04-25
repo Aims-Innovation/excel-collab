@@ -13,6 +13,27 @@
   align-items: center;
 }
 
+.quick-access {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  margin-right: 6px;
+  border-right: 1px solid var(--borderColor);
+}
+.menubar-container .quick-access-button {
+  min-width: 26px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 3px;
+}
+.quick-access-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 .theme-button {
   display: flex;
   align-items: center;

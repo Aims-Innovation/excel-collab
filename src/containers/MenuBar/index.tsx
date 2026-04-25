@@ -1,12 +1,13 @@
 import React, { memo, useCallback, useState } from 'react';
-import { Menu, MenuItem } from '../../components';
+import { MdUndo, MdRedo } from 'react-icons/md';
+import { Menu, MenuItem, Button } from '../../components';
 import { importXLSX, exportToXLSX, exportToCsv, importCSV } from '../Excel';
 import styles from './index.module.css';
 import { Theme } from './Theme';
 import i18n from '../../i18n';
 import { I18N } from './I18N';
 import { saveAs } from '../../util';
-import { useExcel } from '../store';
+import { useExcel, useCoreStore } from '../store';
 import { User } from './User';
 import { File } from './File';
 import { v4 } from 'uuid';
@@ -21,7 +22,11 @@ type Props = {
 export const MenuBarContainer: React.FunctionComponent<Props> = memo(
   ({ leftChildren, rightChildren, hideNewFile, hideRenameFile }) => {
     const { controller, provider } = useExcel();
+    const canUndo = useCoreStore((s) => s.canUndo);
+    const canRedo = useCoreStore((s) => s.canRedo);
     const [visible, setVisible] = useState(false);
+    const handleUndo = useCallback(() => controller.undo(), [controller]);
+    const handleRedo = useCallback(() => controller.redo(), [controller]);
     const handleExportXLSX = useCallback(() => {
       exportToXLSX(`excel_${Date.now()}.xlsx`, controller);
     }, []);
@@ -70,6 +75,28 @@ export const MenuBarContainer: React.FunctionComponent<Props> = memo(
     return (
       <div className={styles['menubar-container']} data-testid="menubar">
         <div className={styles['menubar-menu']}>
+          <div className={styles['quick-access']} data-testid="menubar-quick-access">
+            <Button
+              type="toolbar"
+              disabled={!canUndo}
+              onClick={handleUndo}
+              testId="menubar-undo"
+              title={i18n.t('toolbar-undo')}
+              className={styles['quick-access-button']}
+            >
+              <MdUndo className={styles['quick-access-icon']} />
+            </Button>
+            <Button
+              type="toolbar"
+              disabled={!canRedo}
+              onClick={handleRedo}
+              testId="menubar-redo"
+              title={i18n.t('toolbar-redo')}
+              className={styles['quick-access-button']}
+            >
+              <MdRedo className={styles['quick-access-icon']} />
+            </Button>
+          </div>
           {!hideRenameFile && (
             <File visible={visible} setVisible={setVisible} />
           )}
