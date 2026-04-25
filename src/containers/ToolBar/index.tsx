@@ -23,12 +23,20 @@ import {
   MdFilterAlt,
   MdTextIncrease,
   MdTextDecrease,
+  MdAddBox,
+  MdIndeterminateCheckBox,
+  MdTune,
+  MdArrowDropDown,
 } from 'react-icons/md';
 import {
   Button,
   Select,
   ColorPicker,
   SelectList,
+  Menu,
+  MenuItem,
+  info,
+  toast,
 } from '../../components';
 import {
   FONT_SIZE_LIST,
@@ -95,7 +103,14 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
     const fontFamilies = useCoreStore((s) => s.fontFamilies);
     const setFontFamilies = useCoreStore((s) => s.setFontFamilies);
     const setEditorStatus = useCoreStore((s) => s.setEditorStatus);
+    const sheetList = useCoreStore((s) => s.sheetList);
+    const currentSheetId = useCoreStore((s) => s.currentSheetId);
     const cellStyle = useStyleStore();
+    const currentTabColor = useMemo(
+      () =>
+        sheetList.find((v) => v.sheetId === currentSheetId)?.tabColor || '',
+      [sheetList, currentSheetId],
+    );
 
     const fontFamilyList = useCoreStore((s) => s.fontFamilies);
 
@@ -372,6 +387,140 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
       } else {
         controller.addFilter(controller.getActiveRange().range);
       }
+    }, []);
+
+    const insertSheetRows = useCallback(() => {
+      const { row, rowCount } = controller.getActiveRange().range;
+      controller.addRow(row, rowCount, true);
+    }, []);
+    const insertSheetCols = useCallback(() => {
+      const { col, colCount } = controller.getActiveRange().range;
+      controller.addCol(col, colCount);
+    }, []);
+    const insertSheet = useCallback(() => {
+      controller.addSheet();
+    }, []);
+    const deleteCells = useCallback(() => {
+      controller.deleteCell(controller.getActiveRange().range);
+    }, []);
+    const deleteSheetRows = useCallback(() => {
+      const { row, rowCount } = controller.getActiveRange().range;
+      controller.deleteRow(row, rowCount);
+    }, []);
+    const deleteSheetCols = useCallback(() => {
+      const { col, colCount } = controller.getActiveRange().range;
+      controller.deleteCol(col, colCount);
+    }, []);
+    const deleteCurrentSheet = useCallback(() => {
+      controller.deleteSheet();
+    }, []);
+    const hideRows = useCallback(() => {
+      const { row, rowCount } = controller.getActiveRange().range;
+      controller.hideRow(row, rowCount);
+    }, []);
+    const unhideRows = useCallback(() => {
+      const { row, rowCount } = controller.getActiveRange().range;
+      controller.unhideRow(row, rowCount);
+    }, []);
+    const hideCols = useCallback(() => {
+      const { col, colCount } = controller.getActiveRange().range;
+      controller.hideCol(col, colCount);
+    }, []);
+    const unhideCols = useCallback(() => {
+      const { col, colCount } = controller.getActiveRange().range;
+      controller.unhideCol(col, colCount);
+    }, []);
+    const hideCurrentSheet = useCallback(() => {
+      controller.hideSheet();
+    }, []);
+    const promptDimension = useCallback(
+      (
+        title: string,
+        initial: number,
+        apply: (value: number) => void,
+      ) => {
+        let value = initial;
+        info({
+          visible: true,
+          title,
+          testId: 'toolbar-cells-dimension-dialog',
+          children: (
+            <input
+              type="number"
+              min={0}
+              defaultValue={initial}
+              style={{ width: '200px' }}
+              onChange={(e) => {
+                const t = parseInt(e.target.value, 10);
+                if (!isNaN(t) && t >= 0) {
+                  value = t;
+                }
+                e.stopPropagation();
+              }}
+              data-testid="toolbar-cells-dimension-input"
+            />
+          ),
+          onOk: () => {
+            if (value < 0) {
+              toast.error(i18n.t('greater-than-zero'));
+              return;
+            }
+            apply(value);
+          },
+        });
+      },
+      [],
+    );
+    const promptRowHeight = useCallback(() => {
+      const { row, rowCount } = controller.getActiveRange().range;
+      const current = controller.getRowHeight(row);
+      promptDimension(i18n.t('row-height'), current, (value) => {
+        controller.transaction(() => {
+          for (let i = 0; i < rowCount; i++) {
+            controller.setRowHeight(row + i, value);
+          }
+        });
+      });
+    }, [promptDimension]);
+    const promptColumnWidth = useCallback(() => {
+      const { col, colCount } = controller.getActiveRange().range;
+      const current = controller.getColWidth(col);
+      promptDimension(i18n.t('column-width'), current, (value) => {
+        controller.transaction(() => {
+          for (let i = 0; i < colCount; i++) {
+            controller.setColWidth(col + i, value);
+          }
+        });
+      });
+    }, [promptDimension]);
+    const promptRenameSheet = useCallback(() => {
+      let value = '';
+      info({
+        visible: true,
+        title: i18n.t('rename-sheet'),
+        testId: 'toolbar-cells-rename-dialog',
+        children: (
+          <input
+            type="text"
+            style={{ width: '200px' }}
+            onChange={(e) => {
+              value = e.target.value;
+              e.stopPropagation();
+            }}
+            data-testid="toolbar-cells-rename-input"
+          />
+        ),
+        onOk: () => {
+          if (!value.trim()) {
+            toast.error(i18n.t('the-value-cannot-be-empty'));
+            return;
+          }
+          controller.renameSheet(value.trim());
+        },
+      });
+    }, []);
+    const setSheetTabColor = useCallback((color: string) => {
+      controller.updateSheetInfo({ tabColor: color });
     }, []);
     return (
       <div className={styles['toolbar-wrapper']} data-testid="toolbar">
@@ -709,6 +858,113 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               </Button>
             </Row>
           </Stack>
+        </Section>
+
+        <Section label={i18n.t('section-cells')}>
+          <Row>
+            <Menu
+              position="bottom"
+              testId="toolbar-cells-insert"
+              isPlain
+              className={styles['cells-menu']}
+              label={
+                <span className={styles['tall-menu-trigger']}>
+                  <MdAddBox className={styles['tall-menu-icon']} />
+                  <span className={styles['tall-menu-label']}>
+                    {i18n.t('insert')}
+                  </span>
+                  <MdArrowDropDown className={styles['tall-menu-chevron']} />
+                </span>
+              }
+            >
+              <MenuItem onClick={insertSheetRows} testId="toolbar-cells-insert-rows">
+                {i18n.t('insert-rows')}
+              </MenuItem>
+              <MenuItem onClick={insertSheetCols} testId="toolbar-cells-insert-cols">
+                {i18n.t('insert-columns')}
+              </MenuItem>
+              <MenuItem onClick={insertSheet} testId="toolbar-cells-insert-sheet">
+                {i18n.t('insert-sheet')}
+              </MenuItem>
+            </Menu>
+            <Menu
+              position="bottom"
+              testId="toolbar-cells-delete"
+              isPlain
+              className={styles['cells-menu']}
+              label={
+                <span className={styles['tall-menu-trigger']}>
+                  <MdIndeterminateCheckBox className={styles['tall-menu-icon']} />
+                  <span className={styles['tall-menu-label']}>
+                    {i18n.t('delete')}
+                  </span>
+                  <MdArrowDropDown className={styles['tall-menu-chevron']} />
+                </span>
+              }
+            >
+              <MenuItem onClick={deleteCells} testId="toolbar-cells-delete-cells">
+                {i18n.t('delete-cells')}
+              </MenuItem>
+              <MenuItem onClick={deleteSheetRows} testId="toolbar-cells-delete-rows">
+                {i18n.t('delete-rows')}
+              </MenuItem>
+              <MenuItem onClick={deleteSheetCols} testId="toolbar-cells-delete-cols">
+                {i18n.t('delete-columns')}
+              </MenuItem>
+              <MenuItem onClick={deleteCurrentSheet} testId="toolbar-cells-delete-sheet">
+                {i18n.t('delete-sheet')}
+              </MenuItem>
+            </Menu>
+            <Menu
+              position="bottom"
+              testId="toolbar-cells-format"
+              isPlain
+              className={styles['cells-menu']}
+              label={
+                <span className={styles['tall-menu-trigger']}>
+                  <MdTune className={styles['tall-menu-icon']} />
+                  <span className={styles['tall-menu-label']}>
+                    {i18n.t('format')}
+                  </span>
+                  <MdArrowDropDown className={styles['tall-menu-chevron']} />
+                </span>
+              }
+            >
+              <MenuItem onClick={promptRowHeight} testId="toolbar-cells-row-height">
+                {i18n.t('row-height')}
+              </MenuItem>
+              <MenuItem onClick={promptColumnWidth} testId="toolbar-cells-col-width">
+                {i18n.t('column-width')}
+              </MenuItem>
+              <MenuItem onClick={hideRows} testId="toolbar-cells-hide-rows">
+                {i18n.t('hide-rows')}
+              </MenuItem>
+              <MenuItem onClick={unhideRows} testId="toolbar-cells-unhide-rows">
+                {i18n.t('unhide-rows')}
+              </MenuItem>
+              <MenuItem onClick={hideCols} testId="toolbar-cells-hide-cols">
+                {i18n.t('hide-columns')}
+              </MenuItem>
+              <MenuItem onClick={unhideCols} testId="toolbar-cells-unhide-cols">
+                {i18n.t('unhide-columns')}
+              </MenuItem>
+              <MenuItem onClick={hideCurrentSheet} testId="toolbar-cells-hide-sheet">
+                {i18n.t('hide-sheet')}
+              </MenuItem>
+              <MenuItem onClick={promptRenameSheet} testId="toolbar-cells-rename-sheet">
+                {i18n.t('rename-sheet')}
+              </MenuItem>
+              <MenuItem testId="toolbar-cells-tab-color">
+                <ColorPicker
+                  color={currentTabColor}
+                  onChange={setSheetTabColor}
+                  testId="toolbar-cells-tab-color-picker"
+                >
+                  <span>{i18n.t('tab-color')}</span>
+                </ColorPicker>
+              </MenuItem>
+            </Menu>
+          </Row>
         </Section>
 
         <Section label={i18n.t('section-insert')}>

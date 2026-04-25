@@ -38,7 +38,14 @@ declare const defaultLanguageTranslation: {
     'section-style': string;
     'section-format': string;
     'section-align': string;
+    'section-cells': string;
     'section-insert': string;
+    format: string;
+    'insert-sheet': string;
+    'delete-sheet': string;
+    'delete-cells': string;
+    'hide-sheet': string;
+    'rename-sheet': string;
     rename: string;
     reset: string;
     hide: string;

@@ -161,6 +161,46 @@
   border-radius: 1px;
 }
 
+.toolbar-wrapper .cells-menu {
+  display: inline-flex;
+  align-items: stretch;
+  height: 70px;
+}
+.toolbar-wrapper .cells-menu > button {
+  height: 70px;
+  min-width: 48px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  border: none;
+  background-color: transparent;
+}
+.toolbar-wrapper .cells-menu > button:hover {
+  background-color: var(--hoverColor);
+}
+.tall-menu-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1;
+}
+.tall-menu-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.tall-menu-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--contentColor);
+}
+.tall-menu-chevron {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
 .mini-divider {
   display: inline-block;
   width: 1px;
