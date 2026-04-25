@@ -51,6 +51,7 @@ import {
   DEFAULT_FORMAT_CODE,
   DEFAULT_FONT_SIZE,
   adjustDecimalFormat,
+  intToColumnName,
 } from '../../util';
 import {
   EUnderLine,
@@ -349,6 +350,51 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
     }, []);
     const insertFunction = useCallback(() => {
       setEditorStatus(EditorStatus.EDIT_FORMULA_BAR);
+    }, []);
+    const autoSum = useCallback(() => {
+      const { range } = controller.getActiveRange();
+      const { row, col, sheetId } = range;
+      const target: import('../../types').IRange = {
+        row,
+        col,
+        rowCount: 1,
+        colCount: 1,
+        sheetId: sheetId ?? '',
+      };
+      // Walk up the column from row-1, collecting the contiguous run
+      // of numeric cells. Mirrors Excel's AutoSum heuristic.
+      let endRow = row - 1;
+      let startRow = endRow;
+      let foundNumeric = false;
+      for (let r = endRow; r >= 0; r--) {
+        const cell = controller.getCell({
+          row: r,
+          col,
+          rowCount: 1,
+          colCount: 1,
+          sheetId: sheetId ?? '',
+        });
+        const v = cell?.value;
+        if (typeof v === 'number') {
+          if (!foundNumeric) {
+            endRow = r;
+          }
+          foundNumeric = true;
+          startRow = r;
+        } else if (foundNumeric) {
+          break;
+        } else if (v !== undefined && v !== '') {
+          // Non-numeric, non-empty cell encountered before any numeric
+          // run -- stop. Excel falls through to the row-left scan in
+          // this case but the user asked for column-only behavior.
+          break;
+        }
+      }
+      const colLetter = intToColumnName(col);
+      const formula = foundNumeric
+        ? `=SUM(${colLetter}${startRow + 1}:${colLetter}${endRow + 1})`
+        : '=SUM()';
+      controller.setCellValue(formula, target);
     }, []);
     const horizontalLeft = useCallback(() => {
       controller.updateCellStyle(
@@ -977,11 +1023,19 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
           <Row>
             <Button
               type="toolbar"
+              onClick={autoSum}
+              testId="toolbar-autosum"
+              title={i18n.t('autosum')}
+            >
+              <LuSigma {...iconProps} />
+            </Button>
+            <Button
+              type="toolbar"
               onClick={insertFunction}
               testId="toolbar-fx"
               title={i18n.t('insert-function')}
             >
-              <LuSigma {...iconProps} />
+              <span className={styles.fx}>fx</span>
             </Button>
             <Button
               type="toolbar"
