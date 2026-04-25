@@ -100,11 +100,11 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
     const fontFamilyList = useCoreStore((s) => s.fontFamilies);
 
     const fillStyle = useMemo(
-      () => ({ color: cellStyle.fillColor }),
+      () => ({ backgroundColor: cellStyle.fillColor || '#ffff00' }),
       [cellStyle.fillColor],
     );
     const fontStyle = useMemo(
-      () => ({ color: cellStyle.fontColor }),
+      () => ({ backgroundColor: cellStyle.fontColor || '#c00000' }),
       [cellStyle.fontColor],
     );
     const [numberFormatLabel, numberFormatValue] = useMemo(() => {
@@ -397,27 +397,30 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 onClick={cut}
                 testId="toolbar-cut"
                 title={`${i18n.t('cut')} (Ctrl+X)`}
-                className={styles['small-button']}
+                className={styles['row-button']}
               >
                 <MdContentCut {...smallIconProps} />
+                <span className={styles['row-label']}>{i18n.t('cut')}</span>
               </Button>
               <Button
                 type="toolbar"
                 onClick={copy}
                 testId="toolbar-copy"
                 title={`${i18n.t('copy')} (Ctrl+C)`}
-                className={styles['small-button']}
+                className={styles['row-button']}
               >
                 <MdContentCopy {...smallIconProps} />
+                <span className={styles['row-label']}>{i18n.t('copy')}</span>
               </Button>
               <Button
                 type="toolbar"
                 onClick={clearFormatting}
                 testId="toolbar-clear-format"
                 title={i18n.t('clear-format')}
-                className={styles['small-button']}
+                className={styles['row-button']}
               >
                 <MdFormatClear {...smallIconProps} />
+                <span className={styles['row-label']}>{i18n.t('clear-format')}</span>
               </Button>
             </div>
           </div>
@@ -509,12 +512,15 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               >
                 <Button
                   type="toolbar"
-                  style={fillStyle}
                   testId="toolbar-fill-color"
                   title={i18n.t('toolbar-fill-color')}
-                  className={styles['small-button']}
+                  className={styles['color-button']}
                 >
                   <MdFormatColorFill {...smallIconProps} />
+                  <span
+                    className={styles['color-strip']}
+                    style={fillStyle}
+                  />
                 </Button>
               </ColorPicker>
               <ColorPicker
@@ -525,12 +531,15 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               >
                 <Button
                   type="toolbar"
-                  style={fontStyle}
                   testId="toolbar-font-color"
                   title={i18n.t('toolbar-text-color')}
-                  className={styles['small-button']}
+                  className={styles['color-button']}
                 >
                   <MdFormatColorText {...smallIconProps} />
+                  <span
+                    className={styles['color-strip']}
+                    style={fontStyle}
+                  />
                 </Button>
               </ColorPicker>
             </Row>
@@ -577,9 +586,12 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 onClick={toggleWrapText}
                 testId="toolbar-wrap-text"
                 title={i18n.t('wrap-text')}
-                className={styles['small-button']}
+                className={styles['wide-button']}
               >
                 <MdWrapText {...smallIconProps} />
+                <span className={styles['wide-label']}>
+                  {i18n.t('wrap-text')}
+                </span>
               </Button>
             </Row>
             <Row>
@@ -627,9 +639,12 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                   onClick={toggleMergeCell}
                   testId="toolbar-merge-cell"
                   title={i18n.t('merge-and-center')}
-                  className={styles['small-button']}
+                  className={styles['wide-button']}
                 >
                   <MdCallMerge {...smallIconProps} />
+                  <span className={styles['wide-label']}>
+                    {i18n.t('merge-and-center')}
+                  </span>
                 </Button>
               </SelectList>
             </Row>
