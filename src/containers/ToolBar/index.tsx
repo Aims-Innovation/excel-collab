@@ -59,6 +59,7 @@ import {
   EHorizontalAlign,
   EVerticalAlign,
   EditorStatus,
+  IRange,
 } from '../../types';
 import styles from './index.module.css';
 import { useStyleStore, useCoreStore, useExcel } from '../../containers/store';
@@ -353,48 +354,87 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
     }, []);
     const autoSum = useCallback(() => {
       const { range } = controller.getActiveRange();
-      const { row, col, sheetId } = range;
-      const target: import('../../types').IRange = {
-        row,
-        col,
-        rowCount: 1,
-        colCount: 1,
-        sheetId: sheetId ?? '',
-      };
-      // Walk up the column from row-1, collecting the contiguous run
-      // of numeric cells. Mirrors Excel's AutoSum heuristic.
-      let endRow = row - 1;
-      let startRow = endRow;
-      let foundNumeric = false;
-      for (let r = endRow; r >= 0; r--) {
-        const cell = controller.getCell({
-          row: r,
+      const { row, col, rowCount, colCount, sheetId } = range;
+      const sId = sheetId ?? '';
+
+      // Single-cell case (no multi-cell selection): walk up the column
+      // from row-1 collecting the contiguous run of numeric cells, then
+      // write =SUM(start:end) into the active cell. Mirrors Excel's
+      // single-cell AutoSum heuristic.
+      if (rowCount <= 1 && colCount <= 1) {
+        let endRow = row - 1;
+        let startRow = endRow;
+        let foundNumeric = false;
+        for (let r = endRow; r >= 0; r--) {
+          const cell = controller.getCell({
+            row: r,
+            col,
+            rowCount: 1,
+            colCount: 1,
+            sheetId: sId,
+          });
+          const v = cell?.value;
+          if (typeof v === 'number') {
+            if (!foundNumeric) {
+              endRow = r;
+            }
+            foundNumeric = true;
+            startRow = r;
+          } else if (foundNumeric) {
+            break;
+          } else if (v !== undefined && v !== '') {
+            break;
+          }
+        }
+        const colLetter = intToColumnName(col);
+        const formula = foundNumeric
+          ? `=SUM(${colLetter}${startRow + 1}:${colLetter}${endRow + 1})`
+          : '=SUM()';
+        const target: IRange = {
+          row,
           col,
           rowCount: 1,
           colCount: 1,
-          sheetId: sheetId ?? '',
-        });
-        const v = cell?.value;
-        if (typeof v === 'number') {
-          if (!foundNumeric) {
-            endRow = r;
-          }
-          foundNumeric = true;
-          startRow = r;
-        } else if (foundNumeric) {
-          break;
-        } else if (v !== undefined && v !== '') {
-          // Non-numeric, non-empty cell encountered before any numeric
-          // run -- stop. Excel falls through to the row-left scan in
-          // this case but the user asked for column-only behavior.
-          break;
-        }
+          sheetId: sId,
+        };
+        controller.setCellValue(formula, target);
+        return;
       }
-      const colLetter = intToColumnName(col);
-      const formula = foundNumeric
-        ? `=SUM(${colLetter}${startRow + 1}:${colLetter}${endRow + 1})`
-        : '=SUM()';
-      controller.setCellValue(formula, target);
+
+      // Multi-cell case. The last row of the selection is treated as
+      // the totals row -- each column gets =SUM(<col>top:<col>bottom-1)
+      // written into <col>bottom. For a single-row, multi-col selection,
+      // the analogue is "rightmost cell = SUM of the rest of the row".
+      // Wrapped in transaction() so the whole fill is one undo step.
+      controller.transaction(() => {
+        if (rowCount === 1) {
+          const totalsCol = col + colCount - 1;
+          const startLetter = intToColumnName(col);
+          const endLetter = intToColumnName(totalsCol - 1);
+          const formula = `=SUM(${startLetter}${row + 1}:${endLetter}${row + 1})`;
+          controller.setCellValue(formula, {
+            row,
+            col: totalsCol,
+            rowCount: 1,
+            colCount: 1,
+            sheetId: sId,
+          });
+          return;
+        }
+        const totalsRow = row + rowCount - 1;
+        const sourceEnd = totalsRow - 1;
+        for (let c = col; c < col + colCount; c++) {
+          const letter = intToColumnName(c);
+          const formula = `=SUM(${letter}${row + 1}:${letter}${sourceEnd + 1})`;
+          controller.setCellValue(formula, {
+            row: totalsRow,
+            col: c,
+            rowCount: 1,
+            colCount: 1,
+            sheetId: sId,
+          });
+        }
+      });
     }, []);
     const horizontalLeft = useCallback(() => {
       controller.updateCellStyle(
