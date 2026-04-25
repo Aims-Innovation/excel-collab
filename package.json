@@ -27,6 +27,8 @@
     "test:ci": "JEST_JUNIT_CLASSNAME=\"{filepath}\" jest --reporters=jest-junit --forceExit --detectOpenHandles"
   },
   "dependencies": {
+    "@fontsource/archivo": "^5.2.8",
+    "@fontsource/ibm-plex-sans-arabic": "^5.2.9",
     "@formulajs/formulajs": "^4.5.5",
     "chart.js": "^4.5.1",
     "comlink": "^4.4.2",

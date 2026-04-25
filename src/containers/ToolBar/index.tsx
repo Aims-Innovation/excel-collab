@@ -1,32 +1,38 @@
 import React, { useMemo, memo, useCallback } from 'react';
+/* Icon strategy: Lucide (react-icons/lu) is the primary set -- its
+ * outlined glyphs match Excel's modern ribbon style closely. Material
+ * (react-icons/md) is kept only where Lucide lacks a direct match
+ * (text-color A bar, text-size A^/Av step buttons). */
 import {
-  MdContentCopy,
-  MdContentCut,
-  MdContentPaste,
-  MdFormatClear,
-  MdAttachMoney,
-  MdPercent,
-  MdFormatBold,
-  MdFormatItalic,
-  MdStrikethroughS,
+  LuScissors,
+  LuCopy,
+  LuClipboard,
+  LuEraser,
+  LuDollarSign,
+  LuPercent,
+  LuBold,
+  LuItalic,
+  LuStrikethrough,
+  LuPaintBucket,
+  LuAlignLeft,
+  LuAlignCenter,
+  LuAlignRight,
+  LuAlignStartHorizontal,
+  LuAlignCenterHorizontal,
+  LuAlignEndHorizontal,
+  LuWrapText,
+  LuTableCellsMerge,
+  LuSigma,
+  LuFilter,
+  LuSquarePlus,
+  LuSquareMinus,
+  LuSettings,
+  LuChevronDown,
+} from 'react-icons/lu';
+import {
   MdFormatColorText,
-  MdFormatColorFill,
-  MdFormatAlignLeft,
-  MdFormatAlignCenter,
-  MdFormatAlignRight,
-  MdVerticalAlignTop,
-  MdVerticalAlignCenter,
-  MdVerticalAlignBottom,
-  MdWrapText,
-  MdCallMerge,
-  MdFunctions,
-  MdFilterAlt,
   MdTextIncrease,
   MdTextDecrease,
-  MdAddBox,
-  MdIndeterminateCheckBox,
-  MdTune,
-  MdArrowDropDown,
 } from 'react-icons/md';
 import {
   Button,
@@ -534,7 +540,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               className={styles['big-button']}
             >
               <span className={styles['big-button-inner']}>
-                <MdContentPaste {...iconProps} />
+                <LuClipboard {...iconProps} />
                 <span className={styles['big-button-label']}>
                   {i18n.t('paste')}
                 </span>
@@ -548,7 +554,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={`${i18n.t('cut')} (Ctrl+X)`}
                 className={styles['row-button']}
               >
-                <MdContentCut {...smallIconProps} />
+                <LuScissors {...smallIconProps} />
                 <span className={styles['row-label']}>{i18n.t('cut')}</span>
               </Button>
               <Button
@@ -558,7 +564,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={`${i18n.t('copy')} (Ctrl+C)`}
                 className={styles['row-button']}
               >
-                <MdContentCopy {...smallIconProps} />
+                <LuCopy {...smallIconProps} />
                 <span className={styles['row-label']}>{i18n.t('copy')}</span>
               </Button>
               <Button
@@ -568,7 +574,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('clear-format')}
                 className={styles['row-button']}
               >
-                <MdFormatClear {...smallIconProps} />
+                <LuEraser {...smallIconProps} />
                 <span className={styles['row-label']}>{i18n.t('clear-format')}</span>
               </Button>
             </div>
@@ -621,7 +627,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-bold')}
                 className={styles['small-button']}
               >
-                <MdFormatBold {...smallIconProps} />
+                <LuBold {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -631,7 +637,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-italic')}
                 className={styles['small-button']}
               >
-                <MdFormatItalic {...smallIconProps} />
+                <LuItalic {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -641,7 +647,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-strike')}
                 className={styles['small-button']}
               >
-                <MdStrikethroughS {...smallIconProps} />
+                <LuStrikethrough {...smallIconProps} />
               </Button>
               <Select
                 data={underlineOptionList}
@@ -665,7 +671,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                   title={i18n.t('toolbar-fill-color')}
                   className={styles['color-button']}
                 >
-                  <MdFormatColorFill {...smallIconProps} />
+                  <LuPaintBucket {...smallIconProps} />
                   <span
                     className={styles['color-strip']}
                     style={fillStyle}
@@ -706,7 +712,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-align-top')}
                 className={styles['small-button']}
               >
-                <MdVerticalAlignTop {...smallIconProps} />
+                <LuAlignStartHorizontal {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -716,7 +722,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-align-middle')}
                 className={styles['small-button']}
               >
-                <MdVerticalAlignCenter {...smallIconProps} />
+                <LuAlignCenterHorizontal {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -726,7 +732,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-align-bottom')}
                 className={styles['small-button']}
               >
-                <MdVerticalAlignBottom {...smallIconProps} />
+                <LuAlignEndHorizontal {...smallIconProps} />
               </Button>
               <span className={styles['mini-divider']} />
               <Button
@@ -737,7 +743,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('wrap-text')}
                 className={styles['wide-button']}
               >
-                <MdWrapText {...smallIconProps} />
+                <LuWrapText {...smallIconProps} />
                 <span className={styles['wide-label']}>
                   {i18n.t('wrap-text')}
                 </span>
@@ -752,7 +758,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-align-left')}
                 className={styles['small-button']}
               >
-                <MdFormatAlignLeft {...smallIconProps} />
+                <LuAlignLeft {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -762,7 +768,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-align-center')}
                 className={styles['small-button']}
               >
-                <MdFormatAlignCenter {...smallIconProps} />
+                <LuAlignCenter {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -772,7 +778,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('toolbar-align-right')}
                 className={styles['small-button']}
               >
-                <MdFormatAlignRight {...smallIconProps} />
+                <LuAlignRight {...smallIconProps} />
               </Button>
               <span className={styles['mini-divider']} />
               <SelectList
@@ -790,7 +796,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                   title={i18n.t('merge-and-center')}
                   className={styles['wide-button']}
                 >
-                  <MdCallMerge {...smallIconProps} />
+                  <LuTableCellsMerge {...smallIconProps} />
                   <span className={styles['wide-label']}>
                     {i18n.t('merge-and-center')}
                   </span>
@@ -827,7 +833,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('format-as-currency')}
                 className={styles['small-button']}
               >
-                <MdAttachMoney {...smallIconProps} />
+                <LuDollarSign {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -836,7 +842,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
                 title={i18n.t('format-as-percent')}
                 className={styles['small-button']}
               >
-                <MdPercent {...smallIconProps} />
+                <LuPercent {...smallIconProps} />
               </Button>
               <Button
                 type="toolbar"
@@ -869,11 +875,11 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               className={styles['cells-menu']}
               label={
                 <span className={styles['tall-menu-trigger']}>
-                  <MdAddBox className={styles['tall-menu-icon']} />
+                  <LuSquarePlus className={styles['tall-menu-icon']} />
                   <span className={styles['tall-menu-label']}>
                     {i18n.t('insert')}
                   </span>
-                  <MdArrowDropDown className={styles['tall-menu-chevron']} />
+                  <LuChevronDown className={styles['tall-menu-chevron']} />
                 </span>
               }
             >
@@ -894,11 +900,11 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               className={styles['cells-menu']}
               label={
                 <span className={styles['tall-menu-trigger']}>
-                  <MdIndeterminateCheckBox className={styles['tall-menu-icon']} />
+                  <LuSquareMinus className={styles['tall-menu-icon']} />
                   <span className={styles['tall-menu-label']}>
                     {i18n.t('delete')}
                   </span>
-                  <MdArrowDropDown className={styles['tall-menu-chevron']} />
+                  <LuChevronDown className={styles['tall-menu-chevron']} />
                 </span>
               }
             >
@@ -922,11 +928,11 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               className={styles['cells-menu']}
               label={
                 <span className={styles['tall-menu-trigger']}>
-                  <MdTune className={styles['tall-menu-icon']} />
+                  <LuSettings className={styles['tall-menu-icon']} />
                   <span className={styles['tall-menu-label']}>
                     {i18n.t('format')}
                   </span>
-                  <MdArrowDropDown className={styles['tall-menu-chevron']} />
+                  <LuChevronDown className={styles['tall-menu-chevron']} />
                 </span>
               }
             >
@@ -975,7 +981,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               testId="toolbar-fx"
               title={i18n.t('insert-function')}
             >
-              <MdFunctions {...iconProps} />
+              <LuSigma {...iconProps} />
             </Button>
             <Button
               type="toolbar"
@@ -984,7 +990,7 @@ export const ToolbarContainer: React.FunctionComponent<React.PropsWithChildren> 
               testId="toolbar-filter"
               title={i18n.t('filter')}
             >
-              <MdFilterAlt {...iconProps} />
+              <LuFilter {...iconProps} />
             </Button>
             <InsertFloatingPicture />
             <InsertChart />
