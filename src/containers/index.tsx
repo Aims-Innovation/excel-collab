@@ -142,6 +142,14 @@ export type EditorProps = {
   hideNewFile?: boolean;
   /** Hide the "Rename File" menu entry and the clickable filename widget (host app owns document naming). */
   hideRenameFile?: boolean;
+  /** Hide the user / avatar widget on the right of the menubar. */
+  hideUser?: boolean;
+  /** Hide the language switcher on the right of the menubar. */
+  hideI18n?: boolean;
+  /** Hide the light / dark theme toggle on the right of the menubar. */
+  hideTheme?: boolean;
+  /** When false, hide all Export menu items (XLSX / CSV / JSON). Defaults to true. */
+  canExport?: boolean;
 };
 const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
   ({
@@ -152,6 +160,10 @@ const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
     sheetBarChildren,
     hideNewFile,
     hideRenameFile,
+    hideUser,
+    hideI18n,
+    hideTheme,
+    canExport,
   }) => {
     const { isLoading } = useCollaboration();
     // Subscribe to language here so only the i18n-rendering memo'd children
@@ -180,6 +192,10 @@ const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
           rightChildren={menubarRightChildren}
           hideNewFile={hideNewFile}
           hideRenameFile={hideRenameFile}
+          hideUser={hideUser}
+          hideI18n={hideI18n}
+          hideTheme={hideTheme}
+          canExport={canExport}
         />
         <ToolbarContainer key={`toolbar-${language}`}>
           {toolbarChildren}

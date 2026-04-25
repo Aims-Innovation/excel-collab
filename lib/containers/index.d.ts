@@ -15,6 +15,14 @@ export type EditorProps = {
     hideNewFile?: boolean;
     /** Hide the "Rename File" menu entry and the clickable filename widget (host app owns document naming). */
     hideRenameFile?: boolean;
+    /** Hide the user / avatar widget on the right of the menubar. */
+    hideUser?: boolean;
+    /** Hide the language switcher on the right of the menubar. */
+    hideI18n?: boolean;
+    /** Hide the light / dark theme toggle on the right of the menubar. */
+    hideTheme?: boolean;
+    /** When false, hide all Export menu items (XLSX / CSV / JSON). Defaults to true. */
+    canExport?: boolean;
 };
 declare const ExcelEditor: React.FunctionComponent<EditorProps>;
 export * from './store';

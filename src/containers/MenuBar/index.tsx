@@ -17,10 +17,24 @@ type Props = {
   rightChildren?: React.ReactNode;
   hideNewFile?: boolean;
   hideRenameFile?: boolean;
+  hideUser?: boolean;
+  hideI18n?: boolean;
+  hideTheme?: boolean;
+  /** When false, hide all Export menu items (XLSX / CSV / JSON). Defaults to true. */
+  canExport?: boolean;
 };
 
 export const MenuBarContainer: React.FunctionComponent<Props> = memo(
-  ({ leftChildren, rightChildren, hideNewFile, hideRenameFile }) => {
+  ({
+    leftChildren,
+    rightChildren,
+    hideNewFile,
+    hideRenameFile,
+    hideUser,
+    hideI18n,
+    hideTheme,
+    canExport = true,
+  }) => {
     const { controller, provider } = useExcel();
     const canUndo = useCoreStore((s) => s.canUndo);
     const canRedo = useCoreStore((s) => s.canRedo);
@@ -144,22 +158,28 @@ export const MenuBarContainer: React.FunctionComponent<Props> = memo(
                 {i18n.t('import', { format: 'CSV' })}
               </label>
             </MenuItem>
-            <MenuItem onClick={handleExportXLSX} testId="menubar-export-xlsx">
-              {i18n.t('export', { format: 'XLSX' })}
-            </MenuItem>
-            <MenuItem testId="menubar-export-csv" onClick={handleExportCSV}>
-              {i18n.t('export', { format: 'CSV' })}
-            </MenuItem>
-            <MenuItem testId="menubar-export-json" onClick={handleExportJSON}>
-              {i18n.t('export', { format: 'JSON' })}
-            </MenuItem>
+            {canExport && (
+              <MenuItem onClick={handleExportXLSX} testId="menubar-export-xlsx">
+                {i18n.t('export', { format: 'XLSX' })}
+              </MenuItem>
+            )}
+            {canExport && (
+              <MenuItem testId="menubar-export-csv" onClick={handleExportCSV}>
+                {i18n.t('export', { format: 'CSV' })}
+              </MenuItem>
+            )}
+            {canExport && (
+              <MenuItem testId="menubar-export-json" onClick={handleExportJSON}>
+                {i18n.t('export', { format: 'JSON' })}
+              </MenuItem>
+            )}
           </Menu>
           {leftChildren}
         </div>
         {rightChildren}
-        <User />
-        <I18N />
-        <Theme />
+        {!hideUser && <User />}
+        {!hideI18n && <I18N />}
+        {!hideTheme && <Theme />}
       </div>
     );
   },
