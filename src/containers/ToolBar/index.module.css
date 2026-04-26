@@ -12,7 +12,12 @@
   overflow-x: auto;
   padding: 8px 12px;
   background-color: color-mix(in srgb, var(--contentColor) 5%, var(--white));
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.06);
+  /* Explicit bottom border + soft shadow. The shadow alone (carried
+     over from the user's reference CSS) was too pale to read on a
+     light background; the border guarantees a visible boundary
+     between the toolbar and the formula bar below. */
+  border-bottom: 1px solid color-mix(in srgb, var(--contentColor) 25%, transparent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   font-family: 'Archivo', 'IBM Plex Sans Arabic', 'PingFang SC',
     'Microsoft Yahei UI', Arial, sans-serif;
   color: color-mix(in srgb, var(--contentColor) 85%, transparent);
@@ -35,7 +40,7 @@
   grid-column-gap: 4px;
   align-items: center;
   padding: 0 10px;
-  border-right: 1px solid color-mix(in srgb, var(--contentColor) 18%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--contentColor) 35%, transparent);
   flex-shrink: 0;
 }
 .section:last-of-type {
@@ -200,14 +205,24 @@
   align-items: stretch;
   height: 64px;
   grid-row: 1 / 3;
+  align-self: center;
 }
 .toolbar-wrapper .cells-menu > button {
-  height: 64px;
+  /* Force flex column + full height so the icon / label / chevron
+     stack centers correctly. Without explicit height: 100% the base
+     .buttonWrapper rule (height: 20px) was clipping the trigger
+     content from the top -- the visible icon was the bottom slice. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
   min-width: 50px;
-  padding: 4px 4px;
+  padding: 6px 6px;
   border-radius: 3px;
   border: none;
   background-color: transparent;
+  box-sizing: border-box;
 }
 .toolbar-wrapper .cells-menu > button:hover {
   background-color: var(--hoverColor);
@@ -217,24 +232,29 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   line-height: 1;
+  height: 100%;
+  width: 100%;
 }
 .tall-menu-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: block;
+  flex-shrink: 0;
 }
 .tall-menu-label {
   font-size: 11px;
   font-weight: 400;
   color: inherit;
+  white-space: nowrap;
 }
 .tall-menu-chevron {
   width: 12px;
   height: 12px;
   display: block;
   opacity: 0.7;
+  flex-shrink: 0;
 }
 
 /* === In-row mini hairline (e.g. between vertical-aligns and
@@ -243,12 +263,25 @@
   display: inline-block;
   width: 1px;
   height: 18px;
-  background-color: color-mix(in srgb, var(--contentColor) 18%, transparent);
+  background-color: color-mix(in srgb, var(--contentColor) 30%, transparent);
   margin: 0 3px;
   flex-shrink: 0;
 }
 
-/* === Selects + dropdowns === */
+/* === Selects + dropdowns === Excel boxes the selects with a thin
+   border so the click target is unambiguous. The lib's native
+   <select> elements inherit no border by default; force one here. */
+.toolbar-wrapper select {
+  border: 1px solid color-mix(in srgb, var(--contentColor) 25%, transparent);
+  border-radius: 2px;
+  background-color: var(--white);
+  padding: 0 4px;
+}
+.toolbar-wrapper .number-format {
+  border: 1px solid color-mix(in srgb, var(--contentColor) 25%, transparent);
+  border-radius: 2px;
+  background-color: var(--white);
+}
 .toolbar-wrapper .merge-cell {
   width: auto;
   height: 30px;
