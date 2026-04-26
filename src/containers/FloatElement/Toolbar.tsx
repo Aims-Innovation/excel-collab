@@ -1,4 +1,5 @@
 import React, { useRef, memo, useCallback } from 'react';
+import { LuImage, LuChartColumn } from 'react-icons/lu';
 import { Button, toast } from '../../components';
 import { getImageSize, convertFileToTextOrBase64, toIRange } from '../../util';
 import i18n from '../../i18n';
@@ -72,7 +73,11 @@ export const InsertFloatingPicture = memo(() => {
     [provider],
   );
   return (
-    <Button testId="toolbar-floating-picture" title="Floating Picture">
+    <Button
+      type="toolbar"
+      testId="toolbar-floating-picture"
+      title={i18n.t('floating-picture')}
+    >
       <input
         type="file"
         hidden
@@ -82,7 +87,12 @@ export const InsertFloatingPicture = memo(() => {
         id="upload_float_image"
         data-testid="toolbar-floating-picture-input"
       />
-      <label htmlFor="upload_float_image">{i18n.t('floating-picture')}</label>
+      <label
+        htmlFor="upload_float_image"
+        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+      >
+        <LuImage style={{ width: 18, height: 18, display: 'block' }} />
+      </label>
     </Button>
   );
 });
@@ -111,8 +121,13 @@ export const InsertChart = memo(() => {
   }, []);
 
   return (
-    <Button testId="toolbar-chart" onClick={handleClick} title="Chart">
-      {i18n.t('chart')}
+    <Button
+      type="toolbar"
+      testId="toolbar-chart"
+      onClick={handleClick}
+      title={i18n.t('chart')}
+    >
+      <LuChartColumn style={{ width: 18, height: 18, display: 'block' }} />
     </Button>
   );
 });

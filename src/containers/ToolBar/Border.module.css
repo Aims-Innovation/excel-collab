@@ -1,19 +1,27 @@
+/* Used only inside the toolbar's Font row. Sized to match the
+   30px tall row buttons. */
+
 .container {
   display: flex;
   align-items: center;
   position: relative;
   border: 1px solid var(--borderColor);
-  width: 150px;
+  width: 110px;
+  height: 30px;
+  border-radius: 2px;
+  background-color: var(--white);
+  box-sizing: border-box;
+  font-size: 11px;
 }
 
-.container .trigger {
-  border-left: 1px solid var(--borderColor);
-  height: 100%;
-  width: 20px;
-}
 .container .main {
   flex: 1;
   text-align: center;
+  height: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
 }
 
 .container .menu {
@@ -21,6 +29,16 @@
   border-left: 1px solid var(--borderColor);
 }
 
+.container .menu .trigger {
+  height: 100%;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dropdown popup. Wider than the trigger so all 8 border options +
+   line-color + line-style submenu fit comfortably. */
 .container .menu .portal {
-  width: 150px;
+  width: 180px;
 }

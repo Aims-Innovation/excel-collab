@@ -205,20 +205,19 @@
   align-items: stretch;
   height: 64px;
   grid-row: 1 / 3;
-  align-self: center;
 }
 .toolbar-wrapper .cells-menu > button {
-  /* Force flex column + full height so the icon / label / chevron
-     stack centers correctly. Without explicit height: 100% the base
-     .buttonWrapper rule (height: 20px) was clipping the trigger
-     content from the top -- the visible icon was the bottom slice. */
+  /* The base .buttonWrapper rule sets height: 20px which would
+     squash this trigger into the top of its grid cell. Override
+     with height: 100% and explicit flex centering so the
+     icon / label / chevron stack actually centers in the 64px area. */
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  width: 100%;
+  width: auto;
   min-width: 50px;
-  padding: 6px 6px;
+  padding: 4px 6px;
   border-radius: 3px;
   border: none;
   background-color: transparent;
@@ -228,14 +227,15 @@
   background-color: var(--hoverColor);
 }
 .tall-menu-trigger {
+  /* Tight stack: icon, label directly under (1px gap), chevron just
+     below the label. The user reported the previous 3px gap looked
+     like the icon was floating away from its label. */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 1px;
   line-height: 1;
-  height: 100%;
-  width: 100%;
 }
 .tall-menu-icon {
   width: 20px;
@@ -248,13 +248,15 @@
   font-weight: 400;
   color: inherit;
   white-space: nowrap;
+  margin-top: 1px;
 }
 .tall-menu-chevron {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   display: block;
   opacity: 0.7;
   flex-shrink: 0;
+  margin-top: -2px;
 }
 
 /* === In-row mini hairline (e.g. between vertical-aligns and
@@ -343,19 +345,19 @@
   display: block;
 }
 
-/* === BorderToolBar compaction (Border.module.css owns the inner
-   .container class but it's hashed locally, so we target the inner
-   div by attribute selector — fragile but bounded to the toolbar
-   row context and won't bleed elsewhere). === */
-.section-row > div[class*='container'] {
-  width: 96px !important;
-  height: 30px !important;
-  font-size: 11px;
-}
-.section-row > div[class*='container'] button {
-  height: 28px;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* BorderToolBar compaction lives in Border.module.css now -- the
+   previous attribute-selector approach (.section-row > div[class*=
+   'container']) was matching not only Border's .container but also
+   Menu's .menuContainer popup, clipping the dropdown so only "no
+   border" / "all borders" were visible. */
+
+/* Insert section: small visual gap between fx / Filter / picture /
+   chart so they don't read as a single button strip. */
+.section-row > * + * {
+  /* No effect for sections that already gap their own children
+     (Cells uses .cells-menu items; Number/Font use Stack rows).
+     Insert is a single Row whose children are bare buttons, so a
+     2px sibling gap there is enough to separate them visually.
+     Other sections set their own explicit `gap` on .section-row
+     which takes precedence in flex layout. */
 }
