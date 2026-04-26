@@ -28,3 +28,4 @@ declare const ExcelEditor: React.FunctionComponent<EditorProps>;
 export * from './store';
 export * from './MenuBar';
 export { ExcelEditor, useCollaboration, ToolbarContainer, FormulaBarContainer, CanvasContainer, SheetBarContainer, };
+export { importXLSX, exportToXLSX, importCSV, exportToCsv } from './Excel';

@@ -281,3 +281,8 @@ export {
   CanvasContainer,
   SheetBarContainer,
 };
+// Re-export the XLSX / CSV import + export helpers so consumers can
+// do their own seed-from-blob / save-to-blob flows without having to
+// reach for a subpath import (which the package.json `exports` field
+// blocks). v0.1.13.22+.
+export { importXLSX, exportToXLSX, importCSV, exportToCsv } from './Excel';
