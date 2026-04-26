@@ -13,6 +13,16 @@ const DOUBLE_CLICK_TIME = 300;
 export class MainHandler implements EventHandler {
   private lastTimeStamp = 0;
   pointerMove(data: EventData) {
+    // Guard: when the user has just entered cell-edit mode (e.g. via
+    // double-click), the second pointerdown's onset can be followed by
+    // a brief drag before the cell editor takes focus. Without this
+    // guard, pointerMove keeps extending the active range -- the cell
+    // value visually drags with the cursor as the selection rectangle
+    // grows. Skip range extension while edit mode is active; the
+    // editor input handles its own selection.
+    if (useCoreStore.getState().editorStatus === EditorStatus.EDIT_CELL) {
+      return false;
+    }
     const { controller, x, y, position } = data;
     const headerSize = controller.getHeaderSize();
     if (!position) {

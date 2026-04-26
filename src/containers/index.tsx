@@ -43,6 +43,65 @@ function useCollaboration() {
       if (cancelled) return;
       const content = file?.content ?? '';
       if (content) {
+        // Diagnostic for the "initial load shows no formatting"
+        // investigation: the persisted JSON the provider returns
+        // *should* include style fields inline on each cell
+        // (ModelCellType extends Partial<StyleType>). If styles are
+        // missing here, the bug is upstream of the lib (consumer
+        // backend dropping fields on save). If styles are present
+        // here but don't render, the bug is in the lib's hydrate
+        // -> repaint path. Opt in with:
+        //   localStorage.setItem('debug', 'collaboration')
+        try {
+          const parsed = JSON.parse(content);
+          const sheets = parsed?.worksheets ?? {};
+          const sheetIds = Object.keys(sheets);
+          const firstSheet = sheets[sheetIds[0]] ?? {};
+          const cellEntries = Object.entries(firstSheet);
+          const sampleCell = cellEntries[0];
+          const STYLE_KEYS = [
+            'fontColor',
+            'fillColor',
+            'fontFamily',
+            'fontSize',
+            'isBold',
+            'isItalic',
+            'underline',
+            'numberFormat',
+            'borderLeft',
+            'borderRight',
+            'borderTop',
+            'borderBottom',
+            'horizontalAlign',
+            'verticalAlign',
+            'isWrapText',
+          ];
+          const styledCellCount = cellEntries.reduce((acc, [, c]) => {
+            const cell = c as Record<string, unknown>;
+            return STYLE_KEYS.some((k) => cell?.[k] !== undefined)
+              ? acc + 1
+              : acc;
+          }, 0);
+          collaborationLog('hydrate-content shape', {
+            topLevelKeys: Object.keys(parsed),
+            sheetCount: sheetIds.length,
+            firstSheetCellCount: cellEntries.length,
+            firstSheetStyledCellCount: styledCellCount,
+            sampleCellKey: sampleCell?.[0],
+            sampleCellShape: sampleCell?.[1]
+              ? Object.keys(sampleCell[1] as Record<string, unknown>)
+              : null,
+            sampleCellStyleFieldsSet: sampleCell?.[1]
+              ? STYLE_KEYS.filter(
+                  (k) =>
+                    (sampleCell[1] as Record<string, unknown>)[k] !==
+                    undefined,
+                )
+              : [],
+          });
+        } catch (err) {
+          collaborationLog('hydrate-content shape: parse failed', err);
+        }
         await perfMeasure('controller.fromJSON', () =>
           controller.fromJSON(JSON.parse(content)),
         );

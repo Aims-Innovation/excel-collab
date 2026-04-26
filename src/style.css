@@ -1,12 +1,15 @@
-/* Bundled fonts: Archivo (Latin) + IBM Plex Sans Arabic.
-   Each fontsource CSS bundles @font-face declarations + woff2/woff
-   binaries with unicode-range, so the browser only loads the subsets
-   it actually needs. Vite copies the woff2 files into lib/ at build. */
-@import '@fontsource/archivo/400.css';
-@import '@fontsource/archivo/500.css';
-@import '@fontsource/archivo/600.css';
-@import '@fontsource/ibm-plex-sans-arabic/400.css';
-@import '@fontsource/ibm-plex-sans-arabic/500.css';
+/* Bundled fonts. Subset-specific imports keep the bundled style.css
+   small: vite library mode base64-inlines woff2 binaries into the
+   CSS output regardless of `assetsInlineLimit`, so importing the
+   "all subsets" CSS pulls in vietnamese + latin-ext + cyrillic etc.
+   we never paint. Archivo: latin only (~2 weights). IBM Plex Sans
+   Arabic: arabic subset only (Archivo covers all the Latin glyphs;
+   the browser auto-falls-through Archivo to IBM Plex when rendering
+   Arabic codepoints). */
+@import '@fontsource/archivo/latin-400.css';
+@import '@fontsource/archivo/latin-500.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';
+@import '@fontsource/ibm-plex-sans-arabic/arabic-500.css';
 
 /* 1. Use a more-intuitive box-sizing model */
 *,

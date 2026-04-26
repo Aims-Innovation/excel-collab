@@ -6,6 +6,13 @@ export default defineConfig({
   build: {
     sourcemap: true,
     outDir: 'lib',
+    // Don't base64-inline anything large into CSS / JS. With the
+    // bundled fonts (Archivo + IBM Plex Sans Arabic woff2 -- ~50 KB
+    // each before gzip) inlining would blow style.css from ~22 KB
+    // to ~700 KB. Setting the limit to 0 forces every asset to be
+    // emitted as a separate file in lib/ with rewritten URLs --
+    // browsers cache them independently and parallel-download.
+    assetsInlineLimit: 0,
     lib: {
       entry: './src/index.ts',
       cssFileName: 'style',

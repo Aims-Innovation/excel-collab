@@ -17,6 +17,7 @@ declare const defaultLanguageTranslation: {
     'increase-font-size': string;
     'decrease-font-size': string;
     'insert-function': string;
+    autosum: string;
     'toolbar-undo': string;
     'toolbar-redo': string;
     'toolbar-bold': string;
