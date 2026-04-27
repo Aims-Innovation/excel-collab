@@ -22,6 +22,10 @@ type Props = {
   hideTheme?: boolean;
   /** When false, hide all Export menu items (XLSX / CSV / JSON). Defaults to true. */
   canExport?: boolean;
+  /** Hide the entire File menu (and the clickable filename widget on the
+   *  left). Wins over hideNewFile / hideRenameFile / canExport when set --
+   *  intended for view-only sessions where the user lacks edit permission. */
+  hideFileMenu?: boolean;
 };
 
 export const MenuBarContainer: React.FunctionComponent<Props> = memo(
@@ -34,6 +38,7 @@ export const MenuBarContainer: React.FunctionComponent<Props> = memo(
     hideI18n,
     hideTheme,
     canExport = true,
+    hideFileMenu,
   }) => {
     const { controller, provider } = useExcel();
     const canUndo = useCoreStore((s) => s.canUndo);
@@ -111,69 +116,83 @@ export const MenuBarContainer: React.FunctionComponent<Props> = memo(
               <MdRedo className={styles['quick-access-icon']} />
             </Button>
           </div>
-          {!hideRenameFile && (
+          {!hideFileMenu && !hideRenameFile && (
             <File visible={visible} setVisible={setVisible} />
           )}
-          <Menu
-            label={i18n.t('file')}
-            className={styles.menu}
-            testId="menubar-excel"
-          >
-            {!hideNewFile && (
-              <MenuItem onClick={handleAddDocument} testId="menubar-new-excel">
-                {i18n.t('new-file')}
+          {!hideFileMenu && (
+            <Menu
+              label={i18n.t('file')}
+              className={styles.menu}
+              testId="menubar-excel"
+            >
+              {!hideNewFile && (
+                <MenuItem
+                  onClick={handleAddDocument}
+                  testId="menubar-new-excel"
+                >
+                  {i18n.t('new-file')}
+                </MenuItem>
+              )}
+              {!hideRenameFile && (
+                <MenuItem
+                  onClick={() => setVisible(true)}
+                  testId="menubar-rename-excel"
+                >
+                  {i18n.t('rename-file')}
+                </MenuItem>
+              )}
+              <MenuItem testId="menubar-import-xlsx">
+                <input
+                  type="file"
+                  hidden
+                  onChange={handleImportXLSX}
+                  accept=".xlsx"
+                  id="import_xlsx"
+                  data-testid="menubar-import-xlsx-input"
+                />
+                <label htmlFor="import_xlsx">
+                  {i18n.t('import', { format: 'XLSX' })}
+                </label>
               </MenuItem>
-            )}
-            {!hideRenameFile && (
-              <MenuItem
-                onClick={() => setVisible(true)}
-                testId="menubar-rename-excel"
-              >
-                {i18n.t('rename-file')}
+              <MenuItem testId="menubar-import-csv">
+                <input
+                  type="file"
+                  hidden
+                  onChange={handleImportCSV}
+                  accept=".csv"
+                  id="import_csv"
+                  data-testid="menubar-import-csv-input"
+                />
+                <label htmlFor="import_csv">
+                  {i18n.t('import', { format: 'CSV' })}
+                </label>
               </MenuItem>
-            )}
-            <MenuItem testId="menubar-import-xlsx">
-              <input
-                type="file"
-                hidden
-                onChange={handleImportXLSX}
-                accept=".xlsx"
-                id="import_xlsx"
-                data-testid="menubar-import-xlsx-input"
-              />
-              <label htmlFor="import_xlsx">
-                {i18n.t('import', { format: 'XLSX' })}
-              </label>
-            </MenuItem>
-            <MenuItem testId="menubar-import-csv">
-              <input
-                type="file"
-                hidden
-                onChange={handleImportCSV}
-                accept=".csv"
-                id="import_csv"
-                data-testid="menubar-import-csv-input"
-              />
-              <label htmlFor="import_csv">
-                {i18n.t('import', { format: 'CSV' })}
-              </label>
-            </MenuItem>
-            {canExport && (
-              <MenuItem onClick={handleExportXLSX} testId="menubar-export-xlsx">
-                {i18n.t('export', { format: 'XLSX' })}
-              </MenuItem>
-            )}
-            {canExport && (
-              <MenuItem testId="menubar-export-csv" onClick={handleExportCSV}>
-                {i18n.t('export', { format: 'CSV' })}
-              </MenuItem>
-            )}
-            {canExport && (
-              <MenuItem testId="menubar-export-json" onClick={handleExportJSON}>
-                {i18n.t('export', { format: 'JSON' })}
-              </MenuItem>
-            )}
-          </Menu>
+              {canExport && (
+                <MenuItem
+                  onClick={handleExportXLSX}
+                  testId="menubar-export-xlsx"
+                >
+                  {i18n.t('export', { format: 'XLSX' })}
+                </MenuItem>
+              )}
+              {canExport && (
+                <MenuItem
+                  testId="menubar-export-csv"
+                  onClick={handleExportCSV}
+                >
+                  {i18n.t('export', { format: 'CSV' })}
+                </MenuItem>
+              )}
+              {canExport && (
+                <MenuItem
+                  testId="menubar-export-json"
+                  onClick={handleExportJSON}
+                >
+                  {i18n.t('export', { format: 'JSON' })}
+                </MenuItem>
+              )}
+            </Menu>
+          )}
           {leftChildren}
         </div>
         {rightChildren}

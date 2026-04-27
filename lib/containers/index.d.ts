@@ -23,6 +23,10 @@ export type EditorProps = {
     hideTheme?: boolean;
     /** When false, hide all Export menu items (XLSX / CSV / JSON). Defaults to true. */
     canExport?: boolean;
+    /** Hide the entire File menu (and the clickable filename widget on the
+     *  left) for view-only sessions. Wins over hideNewFile / hideRenameFile /
+     *  canExport when set. */
+    hideFileMenu?: boolean;
 };
 declare const ExcelEditor: React.FunctionComponent<EditorProps>;
 export * from './store';

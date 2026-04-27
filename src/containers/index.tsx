@@ -209,6 +209,10 @@ export type EditorProps = {
   hideTheme?: boolean;
   /** When false, hide all Export menu items (XLSX / CSV / JSON). Defaults to true. */
   canExport?: boolean;
+  /** Hide the entire File menu (and the clickable filename widget on the
+   *  left) for view-only sessions. Wins over hideNewFile / hideRenameFile /
+   *  canExport when set. */
+  hideFileMenu?: boolean;
 };
 const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
   ({
@@ -223,6 +227,7 @@ const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
     hideI18n,
     hideTheme,
     canExport,
+    hideFileMenu,
   }) => {
     const { isLoading } = useCollaboration();
     // Subscribe to language here so only the i18n-rendering memo'd children
@@ -255,6 +260,7 @@ const ExcelEditor: React.FunctionComponent<EditorProps> = memo(
           hideI18n={hideI18n}
           hideTheme={hideTheme}
           canExport={canExport}
+          hideFileMenu={hideFileMenu}
         />
         <ToolbarContainer key={`toolbar-${language}`}>
           {toolbarChildren}
