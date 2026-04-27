@@ -9,13 +9,17 @@
   display: flex;
   align-items: stretch;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  /* DELIBERATELY NOT overflow-x: auto. Per CSS spec, when one axis
+     is set to auto/hidden/scroll the orthogonal axis's `visible`
+     computes to `auto`, which would clip dropdown popups extending
+     below the toolbar. Sections can extend horizontally past the
+     viewport on very narrow screens; the app-container's
+     overflow: hidden clips them at the viewport edge. Dropdowns
+     are position: absolute relative to their trigger and render
+     freely into the canvas area below the toolbar. */
+  overflow: visible;
   padding: 8px 12px;
   background-color: color-mix(in srgb, var(--contentColor) 5%, var(--white));
-  /* Explicit bottom border + soft shadow. The shadow alone (carried
-     over from the user's reference CSS) was too pale to read on a
-     light background; the border guarantees a visible boundary
-     between the toolbar and the formula bar below. */
   border-bottom: 1px solid color-mix(in srgb, var(--contentColor) 25%, transparent);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   font-family: 'Archivo', 'IBM Plex Sans Arabic', 'PingFang SC',
