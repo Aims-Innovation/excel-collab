@@ -66,10 +66,23 @@ export const chartTypeList = [
   // 'surface',
 ] as const;
 
+type RichTextRun = {
+  rPr?: ObjectItem;
+  t?: {
+    [textKey]: string;
+  };
+};
 type SharedStringItem = {
   t?: {
     [textKey]: string;
   };
+  // Rich-text runs. Excel writes these for cells with mixed font /
+  // color / weight inside a single string. We can't represent
+  // per-run formatting in the lib's flat ModelCellType.value
+  // (boolean | string | number), so we concat run text into a single
+  // plain string -- losing the formatting but keeping the text.
+  // Without this, rich-text cells were silently dropped.
+  r?: RichTextRun | RichTextRun[];
 };
 type ThemeData = Record<
   string,
@@ -97,6 +110,12 @@ interface ColItem {
   };
   v?: {
     [textKey]: string;
+  };
+  // Inline string. Used when the cell has t="inlineStr". May contain
+  // plain <t> or rich-text <r> runs same as a shared string.
+  is?: {
+    t?: { [textKey]: string };
+    r?: RichTextRun | RichTextRun[];
   };
 }
 interface SheetDataRowItem {
@@ -287,25 +306,127 @@ export function convertXMLToJSON(xmlStr: string) {
   return json;
 }
 
-function convertRGB(c?: string) {
-  if (!c) {
-    return '';
-  }
-  const colorPrefix = '#';
-  if (c.length === 6) {
-    return colorPrefix + c;
-  }
-  if (c.length === 8 && c.startsWith('FF')) {
-    return colorPrefix + c.slice(2);
+// Concat the text content of a rich-text or plain string item into
+// a single string. XLSX writes cells with mixed formatting as one
+// or more <r> runs, each containing a <t> child. The lib's model
+// has no rich-text representation (ModelCellType.value is
+// string | boolean | number), so we keep the text and drop the
+// per-run formatting. Without this fallback, cells whose only text
+// lived inside <r> runs (no top-level <t>) ended up with value=''
+// and visually disappeared on import.
+function extractStringValue(
+  data: { t?: { [k: string]: string }; r?: RichTextRun | RichTextRun[] } | undefined,
+): string {
+  if (!data) return '';
+  if (data.t?.[textKey]) return data.t[textKey];
+  if (data.r) {
+    const runs = Array.isArray(data.r) ? data.r : [data.r];
+    return runs
+      .map((run) => run?.t?.[textKey] ?? '')
+      .join('');
   }
   return '';
 }
 
+// OOXML standard 64-color indexed palette. Indices 64 and 65 are
+// "system foreground" / "system background" (the auto colors) --
+// returned as empty so the consuming style logic falls through to
+// its own auto-color handling.
+// Source: ECMA-376 Part 1, §18.8.27 (indexedColors).
+const INDEXED_PALETTE: string[] = [
+  '000000', 'FFFFFF', 'FF0000', '00FF00', '0000FF', 'FFFF00', 'FF00FF', '00FFFF',
+  '000000', 'FFFFFF', 'FF0000', '00FF00', '0000FF', 'FFFF00', 'FF00FF', '00FFFF',
+  '800000', '008000', '000080', '808000', '800080', '008080', 'C0C0C0', '808080',
+  '9999FF', '993366', 'FFFFCC', 'CCFFFF', '660066', 'FF8080', '0066CC', 'CCCCFF',
+  '000080', 'FF00FF', 'FFFF00', '00FFFF', '800080', '800000', '008080', '0000FF',
+  '00CCFF', 'CCFFFF', 'CCFFCC', 'FFFF99', '99CCFF', 'FF99CC', 'CC99FF', 'FFCC99',
+  '3366FF', '33CCCC', '99CC00', 'FFCC00', 'FF9900', 'FF6600', '666699', '969696',
+  '003366', '339966', '003300', '333300', '993300', '993366', '333399', '333333',
+];
+
+// OOXML tint via HSL (the spec-correct method). Tint is in [-1, 1]:
+// negative darkens toward black, positive lightens toward white.
+// Without this, theme colors with non-zero tint rendered as the
+// raw theme color -- e.g. a "dark blue, lighter 40%" cell would
+// come back fully saturated dark blue instead of the lighter shade
+// Excel actually paints.
+function applyTint(rgbHex: string, tint: number): string {
+  if (!rgbHex || rgbHex.length !== 6 || !Number.isFinite(tint) || tint === 0) {
+    return rgbHex;
+  }
+  const r = parseInt(rgbHex.slice(0, 2), 16) / 255;
+  const g = parseInt(rgbHex.slice(2, 4), 16) / 255;
+  const b = parseInt(rgbHex.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  let newL: number;
+  if (tint < 0) newL = l * (1 + tint);
+  else newL = l + (1 - l) * tint;
+  newL = Math.max(0, Math.min(1, newL));
+  const hueToRgb = (p: number, q: number, t: number): number => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  let r2: number;
+  let g2: number;
+  let b2: number;
+  if (s === 0) {
+    r2 = g2 = b2 = newL;
+  } else {
+    const q = newL < 0.5 ? newL * (1 + s) : newL + s - newL * s;
+    const p = 2 * newL - q;
+    r2 = hueToRgb(p, q, h + 1 / 3);
+    g2 = hueToRgb(p, q, h);
+    b2 = hueToRgb(p, q, h - 1 / 3);
+  }
+  const toHex = (n: number) =>
+    Math.round(n * 255)
+      .toString(16)
+      .padStart(2, '0')
+      .toUpperCase();
+  return `${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
+}
+
+// Resolve a XLSX color reference to a "#RRGGBB" string. Handles all
+// four variants (rgb / theme / indexed / auto) plus the OOXML tint
+// modifier, which is critical for matching Excel's actual rendered
+// colors -- "Dark Blue, lighter 40%" cells reference theme=4 with
+// tint=0.4 and need both lookup AND tint applied.
 function convertColor(themeData: ThemeData, color?: ColorItem) {
   if (!color) {
     return '';
   }
-  if (color.theme) {
+
+  // Auto colors: foreground/background. We don't know the host's
+  // current theme so return empty -- the consuming style logic falls
+  // through to its own default (typically black-on-white).
+  if (color.auto === '1' || color.auto === 'true') {
+    return '';
+  }
+
+  // Resolve to a 6-char uppercase hex (no '#' prefix) so we can
+  // optionally apply tint before formatting the final string.
+  let hex = '';
+
+  if (color.theme !== undefined) {
+    // ECMA-376 indexed theme color order (§18.8.43):
+    //   0 -> lt1, 1 -> dk1, 2 -> lt2, 3 -> dk2,
+    //   4..9 -> accent1..accent6,
+    //   10 -> hlink, 11 -> folHlink
     const themeIndex = [
       'a:lt1',
       'a:dk1',
@@ -317,17 +438,46 @@ function convertColor(themeData: ThemeData, color?: ColorItem) {
       'a:accent4',
       'a:accent5',
       'a:accent6',
+      'a:hlink',
+      'a:folHlink',
     ];
     const i = parseInt(color.theme, 10);
-    if (i >= 0 && i <= 1) {
-      return convertRGB(themeData[themeIndex[i]]?.['a:sysClr']?.lastClr);
+    const key = themeIndex[i];
+    if (key) {
+      // lt1/dk1 are stored as <a:sysClr val="..." lastClr="HEX"/>;
+      // the rest as <a:srgbClr val="HEX"/>. Try both shapes.
+      hex =
+        themeData[key]?.['a:sysClr']?.lastClr ||
+        themeData[key]?.['a:srgbClr']?.val ||
+        '';
     }
-    if (i > 1 && i < themeIndex.length) {
-      return convertRGB(themeData[themeIndex[i]]?.['a:srgbClr']?.val);
+  } else if (color.indexed !== undefined) {
+    const i = parseInt(color.indexed, 10);
+    // Indices 64 (system foreground) and 65 (system background) are
+    // auto -- return empty as for color.auto.
+    if (i >= 0 && i < INDEXED_PALETTE.length) {
+      hex = INDEXED_PALETTE[i];
+    }
+  } else if (color.rgb) {
+    // Strip leading 'FF' alpha if present (XLSX writes ARGB).
+    if (color.rgb.length === 8) {
+      hex = color.rgb.slice(2);
+    } else if (color.rgb.length === 6) {
+      hex = color.rgb;
     }
   }
 
-  return convertRGB(color.rgb);
+  if (!hex) return '';
+
+  // Apply tint on the resolved RGB.
+  if (color.tint) {
+    const tint = parseFloat(color.tint);
+    if (Number.isFinite(tint) && tint !== 0) {
+      hex = applyTint(hex, tint);
+    }
+  }
+
+  return `#${hex.toUpperCase()}`;
 }
 
 function getBorder(
@@ -670,12 +820,25 @@ export function convertXMLDataToModel(
         if (col.t === 's') {
           const i = parseInt(val, 10);
           if (!isNaN(i)) {
-            const data = sharedStrings[i];
-            t.value = data?.t?.[textKey] ?? '';
+            // extractStringValue handles both <t> (plain) and <r><t>
+            // (rich-text runs). Without the rich-text fallback, cells
+            // referencing a shared string that consisted ONLY of
+            // formatted runs were silently set to value='' and
+            // disappeared from the imported sheet.
+            t.value = extractStringValue(sharedStrings[i]);
           }
         }
         if (col.t === 'b') {
           t.value = val === '1';
+        }
+        // Inline string (<c t="inlineStr"><is>...</is></c>). May be
+        // plain <t> or rich-text <r> runs. Same extractStringValue
+        // path as shared strings.
+        if (col.t === 'inlineStr' || col.is) {
+          const inline = extractStringValue(col.is);
+          if (inline) {
+            t.value = inline;
+          }
         }
         result.worksheets[getWorksheetKey(item.sheetId, realRow, range.col)] =
           t;
