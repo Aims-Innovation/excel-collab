@@ -9,15 +9,14 @@
   display: flex;
   align-items: stretch;
   flex-wrap: nowrap;
-  /* DELIBERATELY NOT overflow-x: auto. Per CSS spec, when one axis
-     is set to auto/hidden/scroll the orthogonal axis's `visible`
-     computes to `auto`, which would clip dropdown popups extending
-     below the toolbar. Sections can extend horizontally past the
-     viewport on very narrow screens; the app-container's
-     overflow: hidden clips them at the viewport edge. Dropdowns
-     are position: absolute relative to their trigger and render
-     freely into the canvas area below the toolbar. */
-  overflow: visible;
+  /* Horizontal scroll for narrow viewports. Safe to use overflow-x:
+     auto here because Menu and SelectList popups now render via
+     React Portal into document.body -- they escape this scroll
+     context entirely (and the implicit `overflow-y: auto` it
+     induces, per CSS spec). Without that portal, this rule was
+     clipping every dropdown at the toolbar's bottom edge AND
+     forcing a phantom vertical scrollbar on the toolbar. */
+  overflow-x: auto;
   padding: 8px 12px;
   background-color: color-mix(in srgb, var(--contentColor) 5%, var(--white));
   border-bottom: 1px solid color-mix(in srgb, var(--contentColor) 25%, transparent);

@@ -3,14 +3,20 @@ import React, {
   FunctionComponent,
   memo,
   useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { classnames } from '../../util';
 import { OptionItem } from '../../types';
 import styles from './index.module.css';
 import { Icon } from '../BaseIcon';
 import { Button } from '../Button';
-import { useClickOutside } from '../../containers/hooks';
+
+const useIsoLayoutEffect =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 export interface SelectProps {
   value?: string | number;
@@ -147,6 +153,9 @@ export const SelectList: FunctionComponent<
   React.PropsWithChildren<SelectListProps>
 > = memo(({ children, value, data, onChange, position, testId, className }) => {
   const [active, setActive] = useState(false);
+  const [popupStyle, setPopupStyle] = useState<CSSProperties>({});
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const handleClick = useCallback(() => {
     setActive((v) => !v);
   }, []);
@@ -159,12 +168,62 @@ export const SelectList: FunctionComponent<
     },
     [onChange],
   );
-  const ref = useClickOutside(true, () => {
-    setActive(false);
-  });
+
+  // Compute popup position from the trigger's bounding rect when
+  // the popup opens. position='top' anchors at the trigger's top
+  // edge (popup grows upward via the .top transform); 'bottom'
+  // (default) anchors at the trigger's bottom edge.
+  useIsoLayoutEffect(() => {
+    if (!active || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const placement = position === 'top' ? 'top' : 'bottom';
+    setPopupStyle({
+      position: 'fixed',
+      top: placement === 'top' ? rect.top : rect.bottom,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, [active, position]);
+
+  // Close on scroll / resize -- standard floating-popup behavior.
+  useEffect(() => {
+    if (!active) return;
+    const close = () => setActive(false);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [active]);
+
+  // Click-outside that respects both the trigger and the portal'd
+  // popup. Identical pattern to the Menu component.
+  useEffect(() => {
+    if (!active) return;
+    const onPointerDown = (e: Event) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (
+        triggerRef.current?.contains(target) ||
+        popupRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setActive(false);
+    };
+    const onBlur = () => setActive(false);
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [active]);
+
   return (
     <div
-      ref={ref}
+      ref={triggerRef}
       className={classnames(styles['select-list-container'], className, {
         [styles.active]: active,
       })}
@@ -179,16 +238,22 @@ export const SelectList: FunctionComponent<
       >
         <Icon name="down"></Icon>
       </Button>
-      {active && data.length > 0 && (
-        <SelectPopup
-          active
-          value={value}
-          data={data}
-          onChange={handleChange}
-          position={position}
-          testId={`${testId}-popup`}
-        />
-      )}
+      {active &&
+        data.length > 0 &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div ref={popupRef} style={popupStyle}>
+            <SelectPopup
+              active
+              value={value}
+              data={data}
+              onChange={handleChange}
+              position={position}
+              testId={`${testId}-popup`}
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 });
