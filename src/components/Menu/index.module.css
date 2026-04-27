@@ -8,7 +8,6 @@
   z-index: var(--highestZIndex);
   background-color: var(--white);
   border: 1px solid var(--borderColor);
-  transition: all 1s ease-out;
 }
 .menuContainer {
   left: 0;
