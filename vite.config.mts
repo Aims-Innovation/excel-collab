@@ -1,8 +1,27 @@
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [dts()],
+  // @vitejs/plugin-react handles JSX via babel and selects the
+  // correct transform based on Vite's mode -- jsx/jsxs in production
+  // and jsxDEV in development. Without this plugin the build was
+  // falling back to Vite's built-in esbuild integration, whose
+  // `jsxDev` flag defaults from NODE_ENV. In environments where
+  // NODE_ENV wasn't explicitly 'production' at build time, lib/
+  // shipped with `import { jsxDEV } from 'react/jsx-dev-runtime'`
+  // -- which throws `(0, l.jsxDEV) is not a function` when the
+  // consumer's production React is loaded (jsx-dev-runtime exports
+  // are not present in react.production.min.js).
+  plugins: [react(), dts()],
+  // Belt-and-braces: even with @vitejs/plugin-react in place, also
+  // pin esbuild's jsxDev to false so any plain .ts files (no JSX)
+  // that get touched by esbuild's pass-through transform don't
+  // accidentally pull in jsx-dev-runtime if they happen to contain
+  // any JSX-shaped expressions.
+  esbuild: {
+    jsxDev: false,
+  },
   build: {
     sourcemap: true,
     outDir: 'lib',
