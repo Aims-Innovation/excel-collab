@@ -94,7 +94,16 @@ function updateActiveCell(controller: IController, canvas: HTMLCanvasElement) {
   });
   const cellSize = controller.getCellSize(activeCell);
   const cellPosition = controller.computeCellPosition(activeCell);
+  // The cell-edit textarea uses `position: fixed`, so its top/left
+  // must be viewport-relative. `computeCellPosition` returns coords
+  // relative to the canvas's own origin -- add the canvas's viewport
+  // offset to translate. `top` was being adjusted here but `left` was
+  // NOT, so any left-side chrome (host-app sidebar, container
+  // padding, RTL flip) made the textarea land N pixels left of the
+  // actual cell -- visible as a ghost "on the side" of the cell
+  // you're editing.
   cellPosition.top += pos?.top ?? 0;
+  cellPosition.left += pos?.left ?? 0;
   let fontFamily = cell?.fontFamily ?? '';
   if (!fontFamily) {
     let defaultFontFamily = '';
