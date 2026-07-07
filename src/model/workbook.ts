@@ -53,7 +53,33 @@ export class Workbook implements IWorkbook {
     const data = json.workbook || {};
     const currentSheetId = json.currentSheetId || '';
 
-    const workbook = new Map() as YjsModelJson['workbook'];
+    // MUTATE the existing workbook Y.Map rather than REPLACING it via
+    // getRoot().set('workbook', new Map()). The replace pattern
+    // suffered from a mid-transaction stale-read bug: Controller.
+    // fromJSON is @transaction-wrapped, so this whole method runs
+    // inside doc.transact(). When Controller.emitChange() fires
+    // 'renderChange' synchronously at the end of the transaction,
+    // handleStateChange() reads workbookManager.getSheetList() -- but
+    // the freshly-attached workbook Y.Map wasn't yet visible via the
+    // getter (which does getRoot().get('workbook')) mid-transaction.
+    // The returned list was stale (still the single sheet from
+    // addFirstSheet), so the SheetBar's store only got that one sheet
+    // -- until the next addSheet() click did a MUTATE-style .set(),
+    // at which point the real workbook came into view. Symptom: xlsx
+    // imports with N sheets showed 1 tab until the user clicked '+'.
+    //
+    // The MUTATE pattern below (delete existing keys, set new ones on
+    // the pre-existing Y.Map) is the same pattern addSheet() uses at
+    // line ~109 below, which does not have this problem.
+    if (!this.workbook) {
+      this.model
+        .getRoot()
+        .set('workbook', new Map() as YjsModelJson['workbook']);
+    }
+    const workbook = this.workbook!;
+    for (const key of Array.from(workbook.keys())) {
+      workbook.delete(key);
+    }
     for (const sheet of Object.values(data)) {
       if (!this.validateSheet(sheet)) {
         continue;
@@ -62,7 +88,6 @@ export class Workbook implements IWorkbook {
       workbook.set(sheet.sheetId, item);
     }
 
-    this.model.getRoot().set('workbook', workbook);
     let newSheetId = this.getSheetId() || '';
     const sheetInfo = workbook.get(currentSheetId);
     if (sheetInfo && !sheetInfo?.get('isHide')) {
