@@ -16,6 +16,7 @@ import {
   parseNumber,
   isTestEnv,
   KEY_LIST,
+  collaborationLog,
 } from '../../util';
 import { getThemeColor } from '../../theme';
 import {
@@ -193,6 +194,17 @@ const handleStateChange = (
   controller: IController,
   canvas: HTMLCanvasElement,
 ) => {
+  // Unconditional entry log for FAHC-5061 follow-up: proves whether the
+  // canvas's renderChange listener actually receives the emit. If
+  // docHandler: fired logs but handleStateChange: entry does not, the
+  // canvas isn't mounted yet -- classic mount-order race where the
+  // SignalR Yjs update arrives before initCanvas subscribed. Enable with:
+  //   localStorage.setItem('debug', 'collaboration')
+  collaborationLog('handleStateChange: entry', {
+    changeSetKeys: Array.from(changeSet).join(','),
+    hasWorkbook: changeSet.has('workbook'),
+    changeSetSize: changeSet.size,
+  });
   if (
     changeSet.has('rangeMap') ||
     changeSet.has('cellStyle') ||
@@ -215,6 +227,26 @@ const handleStateChange = (
       tabColor: v.tabColor || '',
     }));
     core.sheetList = sheetList;
+    // Diagnostic for FAHC-5061 follow-up: whenever 'workbook' is in
+    // the changeSet -- from Yjs sync via docHandler OR from a
+    // Controller.fromJSON emit -- dump what controller.getSheetList
+    // actually returns so we can see whether the workbook Y.Map is
+    // fully populated at this point. Enable with:
+    //   localStorage.setItem('debug', 'collaboration')
+    // Second-load bug: the log will show sheetList.length === 1 with
+    // name "Sheet1" while the worksheets Y.Map has cell data for
+    // multiple sheetIds (revealed by clicking '+'). That would
+    // confirm the persisted Yjs state on the backend has decoupled
+    // workbook / worksheets -- the workbook Y.Map only ever got one
+    // entry serialized while the worksheets Y.Map has all.
+    const currentSheetId = controller.getCurrentSheetId();
+    collaborationLog('handleStateChange: workbook change', {
+      changeSetKeys: Array.from(changeSet),
+      sheetListLength: sheetList.length,
+      sheetListIds: sheetList.map((v) => v.sheetId),
+      sheetListNames: sheetList.map((v) => v.name),
+      currentSheetId,
+    });
   }
   if (changeSet.has('currentSheetId')) {
     core.activeUuid = '';
