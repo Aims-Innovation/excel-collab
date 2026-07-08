@@ -164,7 +164,8 @@ function useCollaboration() {
       collaborationLog('docHandler: fired', {
         origin: tran?.origin,
         changeSetSize: changeSet.size,
-        changeSet: Array.from(changeSet),
+        changeSetKeys: Array.from(changeSet).join(','),
+        hasWorkbook: changeSet.has('workbook'),
         changedTypeCount: tran?.changed?.size ?? 0,
         changedParentTypeCount: tran?.changedParentTypes?.size ?? 0,
       });
