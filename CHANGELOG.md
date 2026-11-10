@@ -12,7 +12,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   unfinished draft; restoration requires a fresh edit action. Arrow navigation
   stays available, and existing mutation authorization remains authoritative.
 - Add an isolated `yarn test:readonly` regression suite for the flattened fork
-  and route document-editor PR CI to its actual package commands. Seven of the
+  and run fork CI with its actual package commands. Seven of the
   eight cases fail on fork.33; all eight pass with this change.
 
 ## 0.1.13 (2026-01-15)

@@ -1,0 +1,26 @@
+name: Document editor package
+
+on:
+  push:
+    branches: [document-editor, 'codex/**']
+  pull_request:
+    branches: [document-editor]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install -g yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn type-check
+      - name: Verify read-only edit entry
+        run: yarn test:readonly
+      - run: yarn build
