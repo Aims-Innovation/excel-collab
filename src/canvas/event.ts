@@ -57,7 +57,7 @@ export function registerGlobalEvent(
       temp.handler(controller);
       return;
     }
-    if (event.metaKey || event.ctrlKey) {
+    if (event.metaKey || event.ctrlKey || controller.getReadOnly()) {
       return;
     }
     useCoreStore.getState().setEditorStatus(EditorStatus.EDIT_CELL);

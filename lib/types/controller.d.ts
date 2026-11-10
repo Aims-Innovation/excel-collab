@@ -3,6 +3,7 @@ import { CanvasOverlayPosition, IHooks, DocumentItem } from './components';
 import { IRange } from './range';
 import { IWindowSize, IPosition } from './event';
 export type ControllerEventEmitterType = {
+    readOnlyChange: boolean;
     renderChange: {
         changeSet: Set<ChangeEventType>;
     };

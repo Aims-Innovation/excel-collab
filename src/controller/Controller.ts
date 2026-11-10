@@ -82,7 +82,9 @@ export class Controller
     this.hooks = hooks;
   }
   setReadOnly(readOnly: boolean): void {
+    if (this.readonly === readOnly) return;
     this.readonly = readOnly;
+    this.emit('readOnlyChange', readOnly);
   }
   getReadOnly(): boolean {
     return this.readonly;

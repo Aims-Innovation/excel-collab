@@ -113,6 +113,12 @@ export const MultipleLineEditor: React.FunctionComponent<MultipleLineEditorProps
     const onKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         event.stopPropagation();
+        // A permission event may arrive before React removes this field.
+        if (controller.getReadOnly()) {
+          event.preventDefault();
+          setEditorStatus(EditorStatus.NONE);
+          return;
+        }
         if (event.key === 'Enter' || event.key === 'Tab') {
           let value = event.currentTarget.value;
           const { range, isMerged } = controller.getActiveRange();

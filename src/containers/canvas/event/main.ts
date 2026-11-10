@@ -116,7 +116,7 @@ export class MainHandler implements EventHandler {
     const activeCell = controller.getActiveRange().range;
     if (isSameRange(activeCell, range)) {
       const delay = timeStamp - this.lastTimeStamp;
-      if (delay < DOUBLE_CLICK_TIME) {
+      if (delay < DOUBLE_CLICK_TIME && !controller.getReadOnly()) {
         useCoreStore.getState().setEditorStatus(EditorStatus.EDIT_CELL);
       }
     } else {

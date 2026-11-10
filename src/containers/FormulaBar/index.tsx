@@ -1,4 +1,4 @@
-import { useMemo, memo, useCallback } from 'react';
+import { useMemo, memo, useCallback, useEffect, useSyncExternalStore } from 'react';
 import {
   MultipleLineEditor,
   getEditorStyle,
@@ -11,14 +11,27 @@ import {
   useActiveCell,
   useCoreStore,
   useStyleStore,
+  useExcel,
 } from '../../containers/store';
 import { DefineName } from './DefineName';
 
 export const FormulaBarContainer = memo(() => {
+  const { controller } = useExcel();
+  const subscribeReadOnly = useCallback(
+    (onChange: () => void) => controller.on('readOnlyChange', onChange),
+    [controller],
+  );
+  const getReadOnly = useCallback(() => controller.getReadOnly(), [controller]);
+  const readOnly = useSyncExternalStore(subscribeReadOnly, getReadOnly, getReadOnly);
   const activeCell = useActiveCell();
   const cellStyle = useStyleStore();
   const editorStatus = useCoreStore((state) => state.editorStatus);
   const setEditorStatus = useCoreStore((state) => state.setEditorStatus);
+  // Drop an uncommitted draft on revocation; granting permission later must
+  // not reopen the stale editor. The render guard removes it immediately.
+  useEffect(() => {
+    if (readOnly) setEditorStatus(EditorStatus.NONE);
+  }, [readOnly, setEditorStatus]);
 
   const displayName = useMemo(() => {
     return (
@@ -33,8 +46,9 @@ export const FormulaBarContainer = memo(() => {
     );
   }, [activeCell.defineName, activeCell.col, activeCell.row]);
   const handleClick = useCallback(() => {
+    if (controller.getReadOnly()) return;
     setEditorStatus(EditorStatus.EDIT_FORMULA_BAR);
-  }, []);
+  }, [controller, setEditorStatus]);
   const style = useMemo(() => {
     return getDisplayStyle(cellStyle);
   }, [cellStyle]);
@@ -46,7 +60,7 @@ export const FormulaBarContainer = memo(() => {
         defineName={activeCell.defineName}
       />
       <div className={styles['formula-bar-editor-wrapper']}>
-        {editorStatus !== EditorStatus.NONE && (
+        {!readOnly && editorStatus !== EditorStatus.NONE && (
           <MultipleLineEditor
             initValue={activeCell.value}
             style={getEditorStyle(activeCell, editorStatus, cellStyle)}

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.1.13-fork.34 (2026-11-10)
+
+### Bug Fixes
+
+- Y1-182: cell double-click, keyboard entry and the formula bar respect the
+  controller's current read-only standing. Revocation closes and discards an
+  unfinished draft; restoration requires a fresh edit action. Arrow navigation
+  stays available, and existing mutation authorization remains authoritative.
+- Add an isolated `yarn test:readonly` regression suite for the flattened fork
+  and route document-editor PR CI to its actual package commands. Seven of the
+  eight cases fail on fork.33; all eight pass with this change.
+
 ## 0.1.13 (2026-01-15)
 
 

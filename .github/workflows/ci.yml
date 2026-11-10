@@ -14,7 +14,27 @@ env:
   COMMIT_ID: ${{ github.sha }}
 
 jobs:
+  DocumentEditor:
+    if: github.base_ref == 'document-editor' || github.ref == 'refs/heads/document-editor'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install -g yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn type-check
+      - name: Verify read-only edit entry
+        run: yarn test:readonly
+      - run: yarn build
+
   CI:
+    # The document-editor branch is a flattened package; the upstream
+    # monorepo's demo/font/Playwright scripts do not exist on that branch.
+    if: github.base_ref != 'document-editor' && github.ref != 'refs/heads/document-editor'
     runs-on: ubuntu-latest
     permissions:
       contents: write
