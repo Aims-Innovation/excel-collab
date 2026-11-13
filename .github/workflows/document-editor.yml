@@ -23,4 +23,6 @@ jobs:
       - run: yarn type-check
       - name: Verify read-only edit entry
         run: yarn test:readonly
+      - name: Verify XLSX worksheet relationships
+        run: yarn test:xlsx
       - run: yarn build

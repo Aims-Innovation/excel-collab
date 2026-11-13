@@ -41,6 +41,23 @@ const DRAWING_FLAG = '../drawings/';
 
 const CUSTOM_WIdTH_RADIO = 8;
 
+// Relationship targets are resolved relative to the workbook part, unless
+// rooted at the ZIP package (e.g. openpyxl's /xl/worksheets/sheet1.xml).
+function resolveWorksheetPath(target: string): string {
+  const path = target.startsWith('/') ? target : `${COMMON_PREFIX}/${target}`;
+  const parts: string[] = [];
+  for (const part of path.split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      if (!parts.length) return '';
+      parts.pop();
+    } else {
+      parts.push(part);
+    }
+  }
+  return parts.join('/');
+}
+
 function convertFromPt(value: string) {
   const val = parseFloat(value);
   if (isNaN(val)) {
@@ -651,9 +668,9 @@ export function convertXMLDataToModel(
     }
     const sheetTarget =
       relationList.find((v) => v.Id === item['r:id'])?.Target || '';
-    const worksheetPrefix = 'worksheets/';
-    const baseSheet = sheetTarget.slice(worksheetPrefix.length);
-    const refPath = `${COMMON_PREFIX}/${worksheetPrefix}_rels/${baseSheet}.rels`;
+    const sheetPath = resolveWorksheetPath(sheetTarget);
+    const lastSlash = sheetPath.lastIndexOf('/');
+    const refPath = `${sheetPath.slice(0, lastSlash + 1)}_rels/${sheetPath.slice(lastSlash + 1)}.rels`;
     if (xmlData[refPath]) {
       const list: RelationItem[] = getArray(
         xmlData[refPath],
@@ -670,7 +687,6 @@ export function convertXMLDataToModel(
         }
       }
     }
-    const sheetPath = `${COMMON_PREFIX}/${sheetTarget}`;
     sheetPathMap[item.sheetId] = sheetPath;
     const range = parseReference(
       get<string>(

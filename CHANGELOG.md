@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.1.13-fork.35 (2026-11-13)
+
+### Bug Fixes
+
+- Y1-159: resolve workbook-relative and package-rooted worksheet relationships
+  before importing XLSX content. Files produced with `/xl/worksheets/...` targets
+  no longer open as blank sheets. Preserve formulas, inline strings and merges.
+- Add four real ZIP-import regressions, including dotted relative paths, to CI.
+
 ## 0.1.13-fork.34 (2026-11-10)
 
 ### Bug Fixes
